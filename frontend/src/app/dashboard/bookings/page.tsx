@@ -8,10 +8,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { User, Phone, MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function BookingsPage() {
     const dispatch = useAppDispatch();
     const { bookings, loading } = useAppSelector((state) => state.booking);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+
+    const totalPages = Math.ceil(bookings.length / rowsPerPage);
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const paginatedBookings = bookings.slice(startIndex, startIndex + rowsPerPage);
 
     const handleStatusChange = (id: string, status: "confirmed" | "cancelled") => {
         dispatch(updateBooking({ id, updates: { status } }));
@@ -67,7 +75,7 @@ export default function BookingsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {bookings.map((b) => (
+                                    {paginatedBookings.map((b) => (
                                         <TableRow key={b.id}>
                                             <TableCell>
                                                 {b.status === "confirmed" ? (
@@ -122,6 +130,51 @@ export default function BookingsPage() {
                                     ))}
                                 </TableBody>
                             </Table>
+                        )}
+                        {!loading && bookings.length > 0 && (
+                            <div className="flex items-center justify-between px-4 py-4 border-t">
+                                <div className="flex items-center gap-2 text-sm text-slate-500">
+                                    <span>Rows per page:</span>
+                                    <select
+                                        value={rowsPerPage}
+                                        onChange={(e) => {
+                                            setRowsPerPage(Number(e.target.value));
+                                            setCurrentPage(1);
+                                        }}
+                                        className="border-slate-200 rounded-md text-sm py-1 bg-white"
+                                    >
+                                        <option value={5}>5</option>
+                                        <option value={10}>10</option>
+                                        <option value={20}>20</option>
+                                        <option value={50}>50</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm">
+                                    <span className="text-slate-500">
+                                        Showing {startIndex + 1}-{Math.min(startIndex + rowsPerPage, bookings.length)} of {bookings.length}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="w-8 h-8"
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                        >
+                                            <ChevronLeft className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="w-8 h-8"
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            disabled={currentPage === totalPages}
+                                        >
+                                            <ChevronRight className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </CardContent>
