@@ -65,7 +65,11 @@ export default function EditBookingPage() {
         e.preventDefault();
         setLoading(true);
         try {
-            await dispatch(updateBooking({ id: bookingId, updates: form })).unwrap();
+            const updates = {
+                ...form,
+                total_price: Number(form.total_price)
+            };
+            await dispatch(updateBooking({ id: bookingId, updates })).unwrap();
             router.push(`/dashboard/bookings`);
         } catch (error) {
             console.error("Failed to update booking", error);

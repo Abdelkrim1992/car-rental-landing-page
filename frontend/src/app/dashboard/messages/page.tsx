@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchMessages, markMessageRead } from "@/store/slices/messagesSlice";
+import { fetchMessages, markMessageRead, deleteMessage } from "@/store/slices/messagesSlice";
 import {
     Table,
     TableBody,
@@ -13,11 +13,13 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, Clock, FileWarning } from "lucide-react";
+import { Mail, Phone, Clock, FileWarning, MoreHorizontal, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function MessagesPage() {
     const dispatch = useAppDispatch();
     const { messages, loading } = useAppSelector((state) => state.messages);
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
     useEffect(() => {
         dispatch(fetchMessages());
@@ -29,8 +31,21 @@ export default function MessagesPage() {
         }
     };
 
+    const handleDelete = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // prevent mark as read
+        if (confirm("Are you sure you want to delete this message?")) {
+            dispatch(deleteMessage(id));
+            setOpenDropdown(null);
+        }
+    };
+
+    const toggleDropdown = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setOpenDropdown(openDropdown === id ? null : id);
+    };
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6" onClick={() => setOpenDropdown(null)}>
             <div className="flex flex-col gap-2">
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900">Contact Inquiries</h1>
                 <p className="text-sm text-slate-500">
@@ -64,8 +79,9 @@ export default function MessagesPage() {
                                         <TableHead>Status</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead className="hidden md:table-cell">Contact</TableHead>
-                                        <TableHead className="w-[40%]">Message</TableHead>
+                                        <TableHead className="w-[30%]">Message</TableHead>
                                         <TableHead className="text-right">Date</TableHead>
+                                        <TableHead className="w-[50px]"></TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -102,6 +118,31 @@ export default function MessagesPage() {
                                             </TableCell>
                                             <TableCell className="text-right text-slate-500 text-sm font-normal">
                                                 {new Date(msg.created_at).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell className="text-right relative">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={(e) => toggleDropdown(msg.id, e)}
+                                                    className="w-8 h-8 p-0"
+                                                >
+                                                    <MoreHorizontal className="w-4 h-4 text-slate-500" />
+                                                </Button>
+
+                                                {openDropdown === msg.id && (
+                                                    <div
+                                                        className="absolute right-0 top-12 z-10 w-40 bg-white border rounded-md shadow-lg p-1"
+                                                    >
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 text-xs px-2 gap-2"
+                                                            onClick={(e) => handleDelete(msg.id, e)}
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" /> Remove Message
+                                                        </Button>
+                                                    </div>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     ))}

@@ -9,6 +9,7 @@ const navLinks = [
     { label: "HOME", href: "/" },
     { label: "ABOUT", href: "/#why-us" },
     { label: "OUR FLEET", href: "/cars" },
+    { label: "MY BOOKINGS", href: "/bookings" },
     { label: "CONTACT", href: "/#contact" },
 ];
 
@@ -40,8 +41,8 @@ export function Navbar({ variant = "solid" }: NavbarProps) {
                             key={link.label}
                             href={link.href}
                             className={`text-[11px] tracking-[1.5px] transition-colors ${isActive(link.href)
-                                    ? `${textColor} font-medium`
-                                    : `${textMuted} hover:${textColor}`
+                                ? `${textColor} font-medium`
+                                : `${textMuted} hover:${textColor}`
                                 }`}
                         >
                             {link.label}

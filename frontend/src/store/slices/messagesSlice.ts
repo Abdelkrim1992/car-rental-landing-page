@@ -32,10 +32,8 @@ export const fetchMessages = createAsyncThunk("messages/fetchMessages", async (_
             .select("*")
             .order("created_at", { ascending: false });
 
-        // Fallback if table doesn't exist or fails
         if (error) {
-            console.warn("Could not fetch messages from Supabase (maybe table needs to be created):", error.message);
-            return [];
+            throw new Error(error.message);
         }
 
         return (data || []) as Message[];
@@ -64,14 +62,7 @@ export const sendMessage = createAsyncThunk(
             }
             return data as Message;
         } catch (err) {
-            console.warn("Failed to save message to Supabase. This might mean the 'messages' table is missing.", err);
-            // Even if it fails (no table), we can simulate a success for the UI demo purposes.
-            return {
-                id: Math.random().toString(36).substring(7),
-                ...messageData,
-                status: "unread",
-                created_at: new Date().toISOString(),
-            } as Message;
+            return rejectWithValue(err instanceof Error ? err.message : "Failed to send message");
         }
     }
 );
@@ -95,6 +86,21 @@ export const markMessageRead = createAsyncThunk(
     }
 );
 
+// Admin: delete message
+export const deleteMessage = createAsyncThunk(
+    "messages/deleteMessage",
+    async (id: string, { rejectWithValue }) => {
+        try {
+            const supabase = createClient();
+            const { error } = await supabase.from("messages").delete().eq("id", id);
+            if (error) throw new Error(error.message);
+            return id;
+        } catch (err) {
+            return rejectWithValue(err instanceof Error ? err.message : "Failed to delete message");
+        }
+    }
+);
+
 const messagesSlice = createSlice({
     name: "messages",
     initialState,
@@ -113,9 +119,15 @@ const messagesSlice = createSlice({
             .addCase(sendMessage.fulfilled, (state, action) => {
                 state.messages.unshift(action.payload);
             })
+            .addCase(sendMessage.rejected, (state, action) => {
+                state.error = action.payload as string;
+            })
             .addCase(markMessageRead.fulfilled, (state, action) => {
                 const msg = state.messages.find(m => m.id === action.payload);
                 if (msg) msg.status = "read";
+            })
+            .addCase(deleteMessage.fulfilled, (state, action) => {
+                state.messages = state.messages.filter(m => m.id !== action.payload);
             });
     },
 });

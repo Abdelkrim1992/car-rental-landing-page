@@ -1,61 +1,37 @@
-# Advanced Dashboard Features & CRUD Implementation Plan
+# Implementation Plan: Dashboard & Image Upload
 
-This plan outlines the architecture for transforming the dashboard into a fully interactive management system with live data, pagination, full CRUD capabilities for Bookings and Vehicles, and realtime notifications.
-
-## User Review Required
-
-> [!IMPORTANT]
-> - **Supabase Realtime**: To enable push notifications for new bookings and messages, we need to enable **Supabase Realtime** for the `bookings` and `messages` tables. I will provide the SQL snippet for this, as it must be executed in your Supabase SQL editor.
-> - **Database Schema Updates**: We will be adding Insert/Update/Delete operations. Please ensure your Supabase RLS policies allow the admin to perform these operations, or confirm if RLS is currently disabled for testing.
+## Goal
+Make the "Schedule Car" and "Statistics" components on the dashboard use real database data, make their interactive buttons work (including the search bar), and implement an image upload button on the "Car Details" page. Ensure all data flows correctly from Supabase -> Redux -> Frontend.
 
 ## Proposed Changes
 
-### 1. Dashboard Overview Interactivity & Pagination
-#### [MODIFY] [src/components/dashboard/OrderList.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/OrderList.tsx)
-- Integrate Shadcn `<Pagination />` components.
-- Slice the `bookings` array from Redux based on a `currentPage` state to paginate the data table smoothly.
-- Ensure empty states are pristine and use Shadcn icons.
-#### [MODIFY] [src/components/dashboard/StatisticCard.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/StatisticCard.tsx)
-- Ensure the stats cleanly update whenever the underlying Redux state changes (which we will sync with realtime updates).
+### 1. Overview Dashboard Data Sourcing
+- **[src/app/dashboard/page.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/app/dashboard/page.tsx)**
+  - Use `useEffect` to dispatch `fetchBookings()` and `fetchCars()` on mount so all child components (Schedule, Statistics, Orders) have access to the full Redux state from the database.
 
-### 2. Bookings Management (CRUD)
-#### [MODIFY] [src/store/slices/bookingSlice.ts](file:///d:/car%20rental%20landing%20page/frontend/src/store/slices/bookingSlice.ts)
-- Add `createBooking`, `updateBooking`, and `deleteBooking` async thunks interfacing with Supabase.
-#### [MODIFY] [src/app/dashboard/bookings/page.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/app/dashboard/bookings/page.tsx)
-- Add "Create New Booking" Button opening `/dashboard/bookings/add`.
-- Add an action menu (DropdownMenu) to each row with: "View Details", "Edit", "Accept/Refuse" (Quick status toggle between pending/confirmed/cancelled).
-#### [NEW] `src/app/dashboard/bookings/add/page.tsx`
-- Shadcn form for manual admin booking entry.
-#### [NEW] `src/app/dashboard/bookings/[id]/page.tsx`
-- Detailed read-only view of a booking's complete information.
-#### [NEW] `src/app/dashboard/bookings/[id]/edit/page.tsx`
-- Edit form for modifying dates, assigned car, or customer info. Includes a red "Delete Booking" Destructive Button.
+### 2. Schedule Component
+- **[src/components/dashboard/ScheduleSection.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/ScheduleSection.tsx)**
+  - Connect to Redux to read `bookings` and `cars` state.
+  - Dynamically map `bookings` (with status `confirmed` or `completed`) to the visual timeline rows.
+  - Implement **Search Bar** logic: filter the displayed bookings by Car ID, Car Name, or Guest Name based on input.
+  - Wire up **Tabs (Day/Week/Month)** and **Arrows (< >)** to control local state and correctly shift the visual mapping span of the timeline.
 
-### 3. Vehicles Management (CRUD)
-#### [MODIFY] [src/store/slices/carsSlice.ts](file:///d:/car%20rental%20landing%20page/frontend/src/store/slices/carsSlice.ts)
-- Add `createCar`, `updateCar`, and `deleteCar` async thunks interfacing with Supabase.
-#### [MODIFY] [src/app/dashboard/vehicles/all/page.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/app/dashboard/vehicles/all/page.tsx)
-- Add actions column with "View Details", "Edit", and "Delete".
-#### [NEW] `src/app/dashboard/vehicles/[id]/page.tsx`
-- Premium details view of the vehicle, showing its image, specs, and current rental status.
-#### [NEW] `src/app/dashboard/vehicles/[id]/edit/page.tsx`
-- Form for editing car attributes. Includes a "Delete Vehicle" Destructive Button.
-#### [MODIFY] [src/app/dashboard/vehicles/add/page.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/app/dashboard/vehicles/add/page.tsx)
-- Wire the existing UI mockup to the `createCar` Redux thunk.
+### 3. Statistics Component
+- **[src/components/dashboard/StatisticCard.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/StatisticCard.tsx)**
+  - Implement Shadcn `dropdown-menu` for the "Past 7 days" header button layout.
+  - Use `bookings` from Redux to calculate actual total "Customer" count, "Order" count, "Income", and "Expenses".
+  - Make the see detail buttons navigate to appropriate dashboard sections.
 
-### 4. Real-time Notifications Setup
-#### [MODIFY] [src/app/dashboard/layout.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/app/dashboard/layout.tsx) (or a new `NotificationManager.tsx` component)
-- We will add the Shadcn `Toaster` component (using `sonner`).
-- Implement a `useEffect` hook that creates a Supabase Realtime channel listening to `INSERT` events on the `messages` and `bookings` tables.
-- When a guest submits the contact form or books a car on the public site, the admin dashboard will instantly pop a Toast notification ("New Booking received!" or "New Message received!").
+### 4. Car Image Upload
+- **`src/app/dashboard/vehicles/[id]/edit/page.tsx` & `add/page.tsx`**
+  - Add an `<input type="file" />` labeled "Upload Image" integrated into the form layout.
+  - Add a handler that takes the selected file and either uploads it to a Supabase Storage bucket (if one named `cars` exists) or converts it to a Base64 `TEXT` string to store directly in the `image_url` column. (We will use Supabase Storage if the bucket can be created/accessed, otherwise Base64 for guaranteed persistence).
+  - Show a preview of the selected/uploaded image.
 
 ## Verification Plan
-
-### Automated/Build Checks
-- Run `npm run build` after all dynamic `[id]` routes are created to ensure Next.js dynamic routing is correctly typed and bug-free.
-
-### Manual Testing Protocol
-1. **Pagination**: Create 15+ dummy bookings and verify [OrderList](file:///d:/car%20rental%20landing%20page/frontend/dashboard%20ui/src/app/components/OrderList.tsx#32-112) paginates them (e.g., 5 per page).
-2. **Bookings CRUD**: Manually Add a booking -> Verify it appears -> Accept it -> Edit it -> Delete it. Verify the Redux state updates without needing a page refresh.
-3. **Vehicles CRUD**: Manually Add a car -> View Details -> Edit -> Delete.
-4. **Notifications**: Open the Dashboard in one window, and the Guest Landing Page in another. Submit a booking/message on the guest page and watch for the instant Notification popup in the Dashboard window.
+### Automated & Manual Tests
+1. **Manual Check:** Load `/dashboard`, verify Redux DevTools or Console shows `bookings` and `cars` fetched on mount.
+2. **Manual Check:** Open Overview Dashboard, confirm "Schedule" populates with the user's booking data instead of the previous hardcoded `Santoso`/`Toyota Avanza`.
+3. **Manual Check:** Type a name in the Schedule "Search" bar, verify the list filters correctly.
+4. **Manual Check:** Look at "Statistics", confirm Income equals the sum of `total_price` of the bookings.
+5. **Manual Check:** Go to "All Vehicles" -> "Edit" a vehicle. Click "Upload Image", select a local picture, save changes, and verify the image updates on the grid and database.

@@ -31,6 +31,7 @@ export default function EditVehiclePage() {
         fuel: "",
         img: "",
         description: "",
+        status: "Available",
     });
 
     useEffect(() => {
@@ -44,6 +45,7 @@ export default function EditVehiclePage() {
                 fuel: car.fuel,
                 img: car.img,
                 description: car.description || "",
+                status: car.status || "Available",
             });
         }
     }, [car]);
@@ -74,7 +76,8 @@ export default function EditVehiclePage() {
                     location: form.location,
                     fuel: form.fuel,
                     img: form.img,
-                    description: form.description
+                    description: form.description,
+                    status: form.status
                 }
             })).unwrap();
             router.push(`/dashboard/vehicles/${carId}`);
@@ -151,15 +154,89 @@ export default function EditVehiclePage() {
                             </div>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="location">Station Hub / Location</Label>
-                            <Input id="location" name="location" required value={form.location} onChange={handleChange} />
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="location">Station Hub / Location</Label>
+                                <Input id="location" name="location" required value={form.location} onChange={handleChange} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="status">Availability Status</Label>
+                                <select
+                                    id="status"
+                                    name="status"
+                                    className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                    value={form.status}
+                                    onChange={(e: any) => handleChange(e)}
+                                >
+                                    <option value="Available">Available</option>
+                                    <option value="Rented">Rented</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="img">Image URL</Label>
-                            <Input id="img" name="img" value={form.img} onChange={handleChange} />
-                            <p className="text-xs text-slate-400">Can be a local absolute path like `/images/lambo.png` or an external URL.</p>
+                            <Label>Vehicle Image</Label>
+
+                            <div className="flex flex-col sm:flex-row gap-6 items-start">
+                                {/* Image Preview */}
+                                <div className="w-3/4 mx-auto sm:w-1/3  aspect-[1/1] bg-gray-50 border border-gray-200 rounded-lg overflow-hidden relative flex flex-col justify-center items-center shrink-0">
+                                    {form.img ? (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={form.img} alt="Vehicle preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="text-gray-400 flex flex-col items-center">
+                                            <svg className="w-8 h-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <span className="text-sm">No Image</span>
+                                        </div>
+                                    )}
+                                </div>
+
+
+                            </div>
+                            {/* Upload Controls */}
+                            <div className="flex-1 space-y-2 w-full">
+                                <div className="space-y-2">
+                                    <Label htmlFor="img_file" className="text-sm text-slate-600">Upload New Photo</Label>
+                                    <Input
+                                        id="img_file"
+                                        type="file"
+                                        accept="image/*"
+                                        className="cursor-pointer file:cursor-pointer"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                const reader = new FileReader();
+                                                reader.onload = (event) => {
+                                                    const result = event.target?.result as string;
+                                                    setForm({ ...form, img: result });
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }
+                                        }}
+                                    />
+                                    <p className="text-xs text-slate-400">Supported formats: JPG, PNG, WEBP. Max size: 2MB.</p>
+                                </div>
+
+                                <div className="relative flex items-center gap-4">
+                                    <div className="h-px bg-gray-200 flex-1"></div>
+                                    <span className="text-xs text-gray-400 font-medium">OR URL</span>
+                                    <div className="h-px bg-gray-200 flex-1"></div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="img" className="text-sm text-slate-600">Provide External Image URL</Label>
+                                    <Input
+                                        id="img"
+                                        name="img"
+                                        placeholder="https://example.com/car.jpg"
+                                        value={form.img.startsWith('data:') ? '' : form.img}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -177,7 +254,7 @@ export default function EditVehiclePage() {
                     </CardContent>
                     <CardFooter className="bg-slate-50 border-t py-4 flex justify-end gap-3">
                         <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-                        <Button type="submit" className="bg-slate-900 text-white gap-2" disabled={loading}>
+                        <Button type="submit" className="bg-black text-white gap-2" disabled={loading}>
                             {loading ? "Saving..." : <><Save className="w-4 h-4" /> Save Changes</>}
                         </Button>
                     </CardFooter>

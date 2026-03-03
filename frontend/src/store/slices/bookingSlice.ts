@@ -195,8 +195,11 @@ export const deleteBooking = createAsyncThunk(
     async (id: string, { rejectWithValue }) => {
         try {
             const supabase = createClient();
-            const { error } = await supabase.from("bookings").delete().eq("id", id);
+            const { error, count } = await supabase.from("bookings").delete({ count: "exact" }).eq("id", id);
+
             if (error) throw new Error(error.message);
+            if (count === 0) throw new Error("Booking not found or RLS policy prevented deletion.");
+
             return id;
         } catch (err) {
             return rejectWithValue(err instanceof Error ? err.message : "Failed to delete booking");
@@ -235,8 +238,16 @@ const bookingSlice = createSlice({
                     state.bookings[index] = action.payload;
                 }
             })
+            .addCase(updateBooking.rejected, (state, action) => {
+                state.error = action.payload as string;
+                alert("Failed to update booking: " + String(action.payload));
+            })
             .addCase(deleteBooking.fulfilled, (state, action) => {
                 state.bookings = state.bookings.filter((b) => b.id !== action.payload);
+            })
+            .addCase(deleteBooking.rejected, (state, action) => {
+                state.error = action.payload as string;
+                alert("Failed to delete booking: " + String(action.payload));
             });
     },
 });

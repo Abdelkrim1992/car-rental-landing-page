@@ -59,7 +59,13 @@ export default function VehicleDetailsPage() {
                         <CardContent className="pt-6 space-y-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-slate-500">Status</span>
-                                <Badge className="bg-green-500">Available</Badge>
+                                <Badge className={
+                                    car.status === "Available" ? "bg-green-500 hover:bg-green-600" :
+                                        car.status === "Rented" ? "bg-blue-500 hover:bg-blue-600" :
+                                            "bg-orange-500 hover:bg-orange-600"
+                                }>
+                                    {car.status || "Available"}
+                                </Badge>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-sm text-slate-500">Type</span>

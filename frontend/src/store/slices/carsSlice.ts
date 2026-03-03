@@ -38,13 +38,14 @@ export const fetchCars = createAsyncThunk("cars/fetchCars", async (_, { rejectWi
             id: c.id,
             name: c.name,
             price: `$${c.price_per_day}/Day`,
-            fuel: c.fuel_type || "Petrol",
-            mileage: "0",
+            fuel: c.fuel || "Petrol",
+            mileage: c.mileage || "0",
             img: c.image_url || "/images/dashboard/placeholder.png",
-            type: c.type_name || "Car",
+            type: c.type || "Car",
             brand: c.brand || "Brand",
-            location: c.location_name || "Location",
+            location: c.location || "Location",
             description: c.description || "",
+            status: c.status || "Available",
         }));
 
         return mappedCars as BrowseCar[];
@@ -63,13 +64,14 @@ export const fetchCarById = createAsyncThunk("cars/fetchCarById", async (id: str
             id: data.id,
             name: data.name,
             price: `$${data.price_per_day}/Day`,
-            fuel: data.fuel_type || "Petrol",
-            mileage: "0",
+            fuel: data.fuel || "Petrol",
+            mileage: data.mileage || "0",
             img: data.image_url || "",
-            type: data.type_name || "",
+            type: data.type || "",
             brand: data.brand || "",
-            location: data.location_name || "",
+            location: data.location || "",
             description: data.description || "",
+            status: data.status || "Available",
         } as BrowseCar;
     } catch (err) {
         return rejectWithValue(err instanceof Error ? err.message : "Car not found");
@@ -83,12 +85,13 @@ export const createCar = createAsyncThunk("cars/createCar", async (carData: Part
         const { data, error } = await supabase.from("cars").insert({
             name: carData.name,
             price_per_day: parseInt(carData.price?.replace(/[^0-9]/g, '') || "0"),
-            fuel_type: carData.fuel,
+            fuel: carData.fuel,
             image_url: carData.img,
-            type_name: carData.type,
+            type: carData.type,
             brand: carData.brand,
-            location_name: carData.location,
+            location: carData.location,
             description: carData.description,
+            status: carData.status || "Available",
         }).select().single();
 
         if (error) throw new Error(error.message);
@@ -96,13 +99,14 @@ export const createCar = createAsyncThunk("cars/createCar", async (carData: Part
             id: data.id,
             name: data.name,
             price: `$${data.price_per_day}/Day`,
-            fuel: data.fuel_type,
-            mileage: "0",
+            fuel: data.fuel,
+            mileage: data.mileage || "0",
             img: data.image_url,
-            type: data.type_name,
+            type: data.type,
             brand: data.brand,
-            location: data.location_name,
+            location: data.location,
             description: data.description,
+            status: data.status,
         } as BrowseCar;
     } catch (err) {
         return rejectWithValue(err instanceof Error ? err.message : "Failed to create car");
@@ -116,27 +120,33 @@ export const updateCar = createAsyncThunk("cars/updateCar", async ({ id, updates
         const dbUpdates: any = {};
         if (updates.name) dbUpdates.name = updates.name;
         if (updates.price) dbUpdates.price_per_day = parseInt(updates.price.replace(/[^0-9]/g, '') || "0");
-        if (updates.fuel) dbUpdates.fuel_type = updates.fuel;
+        if (updates.fuel) dbUpdates.fuel = updates.fuel;
         if (updates.img) dbUpdates.image_url = updates.img;
-        if (updates.type) dbUpdates.type_name = updates.type;
+        if (updates.type) dbUpdates.type = updates.type;
         if (updates.brand) dbUpdates.brand = updates.brand;
-        if (updates.location) dbUpdates.location_name = updates.location;
+        if (updates.location) dbUpdates.location = updates.location;
         if (updates.description) dbUpdates.description = updates.description;
+        if (updates.status) dbUpdates.status = updates.status;
 
-        const { data, error } = await supabase.from("cars").update(dbUpdates).eq("id", id).select().single();
+        const { data, error } = await supabase.from("cars").update(dbUpdates).eq("id", id).select();
+
         if (error) throw new Error(error.message);
+        if (!data || data.length === 0) throw new Error("Car not found or you don't have permission to update it. Make sure RLS is configured.");
+
+        const carData = data[0];
 
         return {
-            id: data.id,
-            name: data.name,
-            price: `$${data.price_per_day}/Day`,
-            fuel: data.fuel_type,
-            mileage: "0",
-            img: data.image_url,
-            type: data.type_name,
-            brand: data.brand,
-            location: data.location_name,
-            description: data.description,
+            id: carData.id,
+            name: carData.name,
+            price: `$${carData.price_per_day}/Day`,
+            fuel: carData.fuel,
+            mileage: carData.mileage || "0",
+            img: carData.image_url,
+            type: carData.type,
+            brand: carData.brand,
+            location: carData.location,
+            description: carData.description,
+            status: carData.status,
         } as BrowseCar;
     } catch (err) {
         return rejectWithValue(err instanceof Error ? err.message : "Failed to update car");

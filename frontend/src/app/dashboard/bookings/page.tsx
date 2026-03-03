@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { updateBooking } from "@/store/slices/bookingSlice";
+import { updateBooking, deleteBooking } from "@/store/slices/bookingSlice";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,6 +15,12 @@ export default function BookingsPage() {
 
     const handleStatusChange = (id: string, status: "confirmed" | "cancelled") => {
         dispatch(updateBooking({ id, updates: { status } }));
+    };
+
+    const handleDeleteBooking = (id: string) => {
+        if (window.confirm("Are you sure you want to permanently remove this booking?")) {
+            dispatch(deleteBooking(id));
+        }
     };
 
     return (
@@ -104,7 +110,7 @@ export default function BookingsPage() {
                                                     {b.status === "pending" && (
                                                         <>
                                                             <Button size="sm" variant="outline" className="text-green-600 border-green-200 bg-green-50 hover:bg-green-100" onClick={() => handleStatusChange(b.id, "confirmed")}>Accept</Button>
-                                                            <Button size="sm" variant="outline" className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100" onClick={() => handleStatusChange(b.id, "cancelled")}>Refuse</Button>
+                                                            <Button size="sm" variant="outline" className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100" onClick={() => handleDeleteBooking(b.id)}>Refuse</Button>
                                                         </>
                                                     )}
                                                     <Button size="sm" variant="secondary" asChild>
