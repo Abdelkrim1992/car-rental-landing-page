@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 
 interface OrderEntry {
     id: string;
@@ -30,6 +31,7 @@ export function OrderList() {
 
         return {
             id: booking.id?.slice(0, 8).toUpperCase() || `ORD-${idx + 1}`,
+            realId: booking.id,
             vehicle: booking.car_name || "Unknown Car",
             plate: "—",
             customer: booking.guest_name || "Guest",
@@ -100,7 +102,9 @@ export function OrderList() {
                                             </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-bold truncate">{order.customer}</p>
+                                            <Link href={`/dashboard/bookings/${order.realId}`} className="text-xs font-bold truncate hover:text-primary transition-colors cursor-pointer">
+                                                {order.customer}
+                                            </Link>
                                             <p className="text-[10px] text-muted-foreground truncate">{order.phone}</p>
                                         </div>
                                     </div>

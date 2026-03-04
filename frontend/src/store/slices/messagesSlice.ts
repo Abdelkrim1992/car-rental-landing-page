@@ -113,6 +113,36 @@ export const deleteMessage = createAsyncThunk(
     }
 );
 
+// Admin: reply to message via API
+export const replyToMessage = createAsyncThunk(
+    "messages/replyToMessage",
+    async ({ id, replyMessage }: { id: string; replyMessage: string }, { rejectWithValue }) => {
+        try {
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || "";
+
+            const response = await fetch(`${API_URL}/messages/${id}/reply`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ replyMessage }),
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || "Failed to send reply");
+            }
+
+            return { id };
+        } catch (err) {
+            return rejectWithValue(err instanceof Error ? err.message : "Failed to send reply");
+        }
+    }
+);
+
 const messagesSlice = createSlice({
     name: "messages",
     initialState,
@@ -150,6 +180,19 @@ const messagesSlice = createSlice({
             })
             .addCase(deleteMessage.fulfilled, (state, action) => {
                 state.messages = state.messages.filter(m => m.id !== action.payload);
+            })
+            .addCase(replyToMessage.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(replyToMessage.fulfilled, (state, action) => {
+                state.loading = false;
+                const msg = state.messages.find(m => m.id === action.payload.id);
+                if (msg) msg.status = "read";
+            })
+            .addCase(replyToMessage.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
             });
     },
 });

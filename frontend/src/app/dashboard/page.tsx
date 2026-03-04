@@ -4,8 +4,19 @@ import { MapTracking } from "@/components/dashboard/MapTracking";
 import { StatisticCard } from "@/components/dashboard/StatisticCard";
 import { ScheduleSection } from "@/components/dashboard/ScheduleSection";
 import { OrderList } from "@/components/dashboard/OrderList";
+import { useEffect } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { fetchBookings } from "@/store/slices/bookingSlice";
+import { fetchMessages } from "@/store/slices/messagesSlice";
 
 export default function DashboardPage() {
+    const dispatch = useAppDispatch();
+
+    useEffect(() => {
+        dispatch(fetchBookings());
+        dispatch(fetchMessages());
+    }, [dispatch]);
+
     return (
         <>
             {/* Top Section - Map & Stats */}

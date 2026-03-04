@@ -31,7 +31,7 @@ export default function RootLayout({
       <body className={`${inter.variable} antialiased`}>
         <ReduxProvider>
           {children}
-          <Toaster richColors position="top-right" />
+          <Toaster richColors position="top-right" closeButton />
         </ReduxProvider>
       </body>
     </html>

@@ -1,14 +1,14 @@
 "use client";
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { updateBooking, deleteBooking } from "@/store/slices/bookingSlice";
+import { fetchBookings, updateBooking, deleteBooking } from "@/store/slices/bookingSlice";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User, Phone, MapPin, Plus, MoreHorizontal, Check, X, Eye, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
@@ -31,6 +31,10 @@ export default function BookingsPage() {
     const { bookings, loading } = useAppSelector((state) => state.booking);
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState("10");
+
+    useEffect(() => {
+        dispatch(fetchBookings());
+    }, [dispatch]);
 
     const rows = parseInt(rowsPerPage);
     const totalPages = Math.ceil(bookings.length / rows);

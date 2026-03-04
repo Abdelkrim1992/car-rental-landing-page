@@ -22,20 +22,29 @@ export function RealtimeNotifications(): React.ReactNode {
 
             ws.current.onmessage = (event) => {
                 try {
-                    const { type, data } = JSON.parse(event.data);
+                    const parsed = JSON.parse(event.data);
+                    const { type, data } = parsed;
+
+                    console.log("📡 WebSocket Message Received:", type, data);
 
                     if (type === "NEW_BOOKING") {
                         toast.success("New Booking Received!", {
-                            description: `${data.guest_name || "A user"} just booked ${data.car_name} for ${data.pickup_date}.`
+                            description: `${data.guest_name || "A user"} just booked the ${data.car_name} for ${new Date(data.pickup_date).toLocaleDateString()}.`,
+                            duration: 8000,
                         });
                         dispatch(addBooking(data));
                     }
 
                     if (type === "NEW_MESSAGE") {
-                        toast.info("New Message from Contact Form", {
-                            description: `From: ${data.name} - "${data.message?.slice(0, 30)}..."`
+                        toast.info("New Inquiry Received", {
+                            description: `From: ${data.name} - "${data.message?.slice(0, 50)}..."`,
+                            duration: 8000,
                         });
                         dispatch(addMessage(data));
+                    }
+
+                    if (type === "CONNECTED") {
+                        console.log("📡 WebSocket Handshake Successful:", data.message);
                     }
 
                 } catch (err) {
