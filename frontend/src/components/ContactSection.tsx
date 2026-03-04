@@ -13,12 +13,18 @@ export function ContactSection() {
     const settings = useAppSelector(state => state.settings.data);
 
     const dispatch = useAppDispatch();
+    const [formError, setFormError] = useState<string | null>(null);
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSubmitted(true);
-        await dispatch(sendMessage(form));
-        setTimeout(() => setSubmitted(false), 4000);
-        setForm({ name: "", email: "", phone: "", message: "" });
+        setFormError(null);
+        try {
+            await dispatch(sendMessage(form)).unwrap();
+            setSubmitted(true);
+            setTimeout(() => setSubmitted(false), 4000);
+            setForm({ name: "", email: "", phone: "", message: "" });
+        } catch (err) {
+            setFormError(typeof err === 'string' ? err : "Failed to send message. Please try again.");
+        }
     };
 
     return (
@@ -93,6 +99,11 @@ export function ContactSection() {
                             </motion.div>
                         ) : (
                             <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                                {formError && (
+                                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                                        <p className="text-red-400 text-[13px]">{formError}</p>
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                     <div>
                                         <label className="text-gray-500 text-[10px] tracking-[1px] uppercase block mb-2">Name</label>

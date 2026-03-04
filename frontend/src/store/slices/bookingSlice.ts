@@ -76,6 +76,13 @@ const initialState: BookingState = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+const fetchWithTimeout = (url: string, options?: RequestInit, timeoutMs = 15000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(timeoutId));
+};
+
 // Admin: fetch ALL bookings via API
 export const fetchBookings = createAsyncThunk("booking/fetchBookings", async (_, { rejectWithValue }) => {
     try {
@@ -83,7 +90,7 @@ export const fetchBookings = createAsyncThunk("booking/fetchBookings", async (_,
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token || "";
 
-        const response = await fetch(`${API_URL}/bookings/admin`, {
+        const response = await fetchWithTimeout(`${API_URL}/bookings/admin`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
@@ -91,7 +98,10 @@ export const fetchBookings = createAsyncThunk("booking/fetchBookings", async (_,
         const data = await response.json();
         return data as Booking[];
     } catch (err) {
-        return rejectWithValue(err instanceof Error ? err.message : "Failed to fetch bookings");
+        const message = err instanceof Error
+            ? (err.name === 'AbortError' ? 'Request timed out — please check your backend is running' : err.message)
+            : "Failed to fetch bookings";
+        return rejectWithValue(message);
     }
 });
 
@@ -121,7 +131,7 @@ export const createBooking = createAsyncThunk(
                 booking_lng: coords?.lng || null,
             };
 
-            const response = await fetch(`${API_URL}/bookings/guest`, {
+            const response = await fetchWithTimeout(`${API_URL}/bookings/guest`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(enrichedData),
@@ -135,7 +145,10 @@ export const createBooking = createAsyncThunk(
             const data = await response.json();
             return data as Booking;
         } catch (err) {
-            return rejectWithValue(err instanceof Error ? err.message : "Failed to create booking");
+            const message = err instanceof Error
+                ? (err.name === 'AbortError' ? 'Request timed out — the server may be unreachable' : err.message)
+                : "Failed to create booking";
+            return rejectWithValue(message);
         }
     }
 );
@@ -149,7 +162,7 @@ export const updateBooking = createAsyncThunk(
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token || "";
 
-            const response = await fetch(`${API_URL}/bookings/admin/${id}`, {
+            const response = await fetchWithTimeout(`${API_URL}/bookings/admin/${id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",
@@ -176,7 +189,7 @@ export const deleteBooking = createAsyncThunk(
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token || "";
 
-            const response = await fetch(`${API_URL}/bookings/admin/${id}`, {
+            const response = await fetchWithTimeout(`${API_URL}/bookings/admin/${id}`, {
                 method: "DELETE",
                 headers: { "Authorization": `Bearer ${token}` }
             });

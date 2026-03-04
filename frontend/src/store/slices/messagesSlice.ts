@@ -25,6 +25,13 @@ const initialState: MessagesState = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+const fetchWithTimeout = (url: string, options?: RequestInit, timeoutMs = 15000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: controller.signal })
+        .finally(() => clearTimeout(timeoutId));
+};
+
 // Admin: fetch ALL messages via API
 export const fetchMessages = createAsyncThunk("messages/fetchMessages", async (_, { rejectWithValue }) => {
     try {
@@ -32,7 +39,7 @@ export const fetchMessages = createAsyncThunk("messages/fetchMessages", async (_
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token || "";
 
-        const response = await fetch(`${API_URL}/messages`, {
+        const response = await fetchWithTimeout(`${API_URL}/messages`, {
             headers: { "Authorization": `Bearer ${token}` }
         });
 
@@ -40,7 +47,10 @@ export const fetchMessages = createAsyncThunk("messages/fetchMessages", async (_
         const data = await response.json();
         return data as Message[];
     } catch (err) {
-        return rejectWithValue(err instanceof Error ? err.message : "Failed to fetch messages");
+        const message = err instanceof Error
+            ? (err.name === 'AbortError' ? 'Request timed out — check your backend is running' : err.message)
+            : "Failed to fetch messages";
+        return rejectWithValue(message);
     }
 });
 
@@ -49,7 +59,7 @@ export const sendMessage = createAsyncThunk(
     "messages/sendMessage",
     async (messageData: Omit<Message, "id" | "status" | "created_at">, { rejectWithValue }) => {
         try {
-            const response = await fetch(`${API_URL}/messages`, {
+            const response = await fetchWithTimeout(`${API_URL}/messages`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(messageData),
@@ -63,7 +73,10 @@ export const sendMessage = createAsyncThunk(
             const data = await response.json();
             return data as Message;
         } catch (err) {
-            return rejectWithValue(err instanceof Error ? err.message : "Failed to send message");
+            const message = err instanceof Error
+                ? (err.name === 'AbortError' ? 'Request timed out — the server may be unreachable' : err.message)
+                : "Failed to send message";
+            return rejectWithValue(message);
         }
     }
 );
@@ -77,7 +90,7 @@ export const markMessageRead = createAsyncThunk(
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token || "";
 
-            const response = await fetch(`${API_URL}/messages/${id}/read`, {
+            const response = await fetchWithTimeout(`${API_URL}/messages/${id}/read`, {
                 method: "PATCH",
                 headers: { "Authorization": `Bearer ${token}` }
             });
@@ -100,7 +113,7 @@ export const deleteMessage = createAsyncThunk(
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token || "";
 
-            const response = await fetch(`${API_URL}/messages/${id}`, {
+            const response = await fetchWithTimeout(`${API_URL}/messages/${id}`, {
                 method: "DELETE",
                 headers: { "Authorization": `Bearer ${token}` }
             });
@@ -122,7 +135,7 @@ export const replyToMessage = createAsyncThunk(
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token || "";
 
-            const response = await fetch(`${API_URL}/messages/${id}/reply`, {
+            const response = await fetchWithTimeout(`${API_URL}/messages/${id}/reply`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

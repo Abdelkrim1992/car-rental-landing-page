@@ -141,7 +141,15 @@ router.post("/guest", async (req: Request, res: Response) => {
 
         let finalCarId = car_id;
 
-        // If no car_id, look up by name
+        // Validate if car_id looks like a UUID. If not (e.g. "1", "2"), treat it as invalid
+        // and fall back to car_name lookup instead.
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (finalCarId && !uuidRegex.test(finalCarId)) {
+            // Not a valid UUID, ignore it and use car_name instead
+            finalCarId = null;
+        }
+
+        // If no valid car_id, look up by name
         if (!finalCarId && car_name) {
             const { data: carRow, error: carError } = await supabaseAdmin
                 .from("cars")
@@ -151,10 +159,15 @@ router.post("/guest", async (req: Request, res: Response) => {
                 .single();
 
             if (carError || !carRow) {
-                res.status(404).json({ error: `Car "${car_name}" not found in database.` });
+                res.status(404).json({ error: `Car "${car_name}" not found in database. Please ensure the car exists in the fleet.` });
                 return;
             }
             finalCarId = carRow.id;
+        }
+
+        if (!finalCarId) {
+            res.status(400).json({ error: "Could not determine which car to book. Please provide a valid car." });
+            return;
         }
 
         const { data, error } = await supabaseAdmin
