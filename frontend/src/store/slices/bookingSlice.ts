@@ -13,10 +13,32 @@ export interface Booking {
     pickup_date: string;
     return_date: string;
     pickup_location: string;
+    booking_lat?: number;
+    booking_lng?: number;
     total_price: number;
     status: "pending" | "confirmed" | "completed" | "cancelled";
     created_at: string;
 }
+
+export const geocodeLocation = async (address: string): Promise<{ lat: number; lng: number } | null> => {
+    try {
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+        if (!apiKey) {
+            console.error("Google Maps API key is missing");
+            return null;
+        }
+        const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`);
+        const data = await response.json();
+        if (data.status === "OK" && data.results.length > 0) {
+            const { lat, lng } = data.results[0].geometry.location;
+            return { lat, lng };
+        }
+        return null;
+    } catch (err) {
+        console.error("Geocoding error:", err);
+        return null;
+    }
+};
 
 interface BookingFormState {
     carId: string;
@@ -52,32 +74,22 @@ const initialState: BookingState = {
     error: null,
 };
 
-// Admin: fetch ALL bookings
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+// Admin: fetch ALL bookings via API
 export const fetchBookings = createAsyncThunk("booking/fetchBookings", async (_, { rejectWithValue }) => {
     try {
         const supabase = createClient();
-        const { data, error } = await supabase
-            .from("bookings")
-            .select("*, cars(name, image_url)")
-            .order("created_at", { ascending: false });
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || "";
 
-        if (error) throw new Error(error.message);
-        return (data || []).map((b: Record<string, unknown>) => ({
-            id: b.id,
-            car_id: b.car_id,
-            car_name: (b.cars as Record<string, string>)?.name || "Unknown Car",
-            car_img: (b.cars as Record<string, string>)?.image_url || "",
-            guest_name: b.guest_name || "",
-            guest_email: b.guest_email || "",
-            guest_phone: b.guest_phone || "",
-            guest_message: b.guest_message || "",
-            pickup_date: b.pickup_date,
-            return_date: b.return_date,
-            pickup_location: b.pickup_location,
-            total_price: b.total_price,
-            status: b.status,
-            created_at: b.created_at,
-        })) as Booking[];
+        const response = await fetch(`${API_URL}/bookings/admin`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch bookings");
+        const data = await response.json();
+        return data as Booking[];
     } catch (err) {
         return rejectWithValue(err instanceof Error ? err.message : "Failed to fetch bookings");
     }
@@ -101,105 +113,74 @@ export const createBooking = createAsyncThunk(
         { rejectWithValue }
     ) => {
         try {
-            const supabase = createClient();
+            const coords = await geocodeLocation(bookingData.pickup_location);
+            const enrichedData = {
+                ...bookingData,
+                booking_lat: coords?.lat || null,
+                booking_lng: coords?.lng || null,
+            };
 
-            // Look up the Supabase car UUID by name
-            const { data: carRow, error: carError } = await supabase
-                .from("cars")
-                .select("id")
-                .eq("name", bookingData.car_name)
-                .limit(1)
-                .single();
+            const response = await fetch(`${API_URL}/bookings/guest`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(enrichedData),
+            });
 
-            if (carError || !carRow) throw new Error("Car not found in database");
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || "Failed to create booking");
+            }
 
-            const { data, error } = await supabase
-                .from("bookings")
-                .insert({
-                    user_id: null,
-                    car_id: carRow.id,
-                    pickup_date: bookingData.pickup_date,
-                    return_date: bookingData.return_date,
-                    pickup_location: bookingData.pickup_location,
-                    total_price: bookingData.total_price,
-                    guest_name: bookingData.guest_name,
-                    guest_email: bookingData.guest_email,
-                    guest_phone: bookingData.guest_phone,
-                    guest_message: bookingData.guest_message,
-                    status: "pending",
-                })
-                .select("*, cars(name, image_url)")
-                .single();
-
-            if (error) throw new Error(error.message);
-            return {
-                id: data.id,
-                car_id: data.car_id,
-                car_name: data.cars?.name || "Car",
-                car_img: data.cars?.image_url || "",
-                guest_name: data.guest_name || "",
-                guest_email: data.guest_email || "",
-                guest_phone: data.guest_phone || "",
-                guest_message: data.guest_message || "",
-                pickup_date: data.pickup_date,
-                return_date: data.return_date,
-                pickup_location: data.pickup_location,
-                total_price: data.total_price,
-                status: data.status,
-                created_at: data.created_at,
-            } as Booking;
+            const data = await response.json();
+            return data as Booking;
         } catch (err) {
             return rejectWithValue(err instanceof Error ? err.message : "Failed to create booking");
         }
     }
 );
 
+// Admin: update booking via API
 export const updateBooking = createAsyncThunk(
     "booking/updateBooking",
     async ({ id, updates }: { id: string; updates: Partial<Booking> }, { rejectWithValue }) => {
         try {
             const supabase = createClient();
-            const { data, error } = await supabase
-                .from("bookings")
-                .update(updates)
-                .eq("id", id)
-                .select("*, cars(name, image_url)")
-                .single();
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || "";
 
-            if (error) throw new Error(error.message);
+            const response = await fetch(`${API_URL}/bookings/admin/${id}`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(updates),
+            });
 
-            return {
-                id: data.id,
-                car_id: data.car_id,
-                car_name: data.cars?.name || "Unknown Car",
-                car_img: data.cars?.image_url || "",
-                guest_name: data.guest_name || "",
-                guest_email: data.guest_email || "",
-                guest_phone: data.guest_phone || "",
-                guest_message: data.guest_message || "",
-                pickup_date: data.pickup_date,
-                return_date: data.return_date,
-                pickup_location: data.pickup_location,
-                total_price: data.total_price,
-                status: data.status,
-                created_at: data.created_at,
-            } as Booking;
+            if (!response.ok) throw new Error("Failed to update booking");
+            const data = await response.json();
+            return data as Booking;
         } catch (err) {
             return rejectWithValue(err instanceof Error ? err.message : "Failed to update booking");
         }
     }
 );
 
+// Admin: delete booking via API
 export const deleteBooking = createAsyncThunk(
     "booking/deleteBooking",
     async (id: string, { rejectWithValue }) => {
         try {
             const supabase = createClient();
-            const { error, count } = await supabase.from("bookings").delete({ count: "exact" }).eq("id", id);
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || "";
 
-            if (error) throw new Error(error.message);
-            if (count === 0) throw new Error("Booking not found or RLS policy prevented deletion.");
+            const response = await fetch(`${API_URL}/bookings/admin/${id}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
 
+            if (!response.ok) throw new Error("Failed to delete booking");
             return id;
         } catch (err) {
             return rejectWithValue(err instanceof Error ? err.message : "Failed to delete booking");
@@ -220,6 +201,12 @@ const bookingSlice = createSlice({
         clearBookingError(state) {
             state.error = null;
         },
+        addBooking(state, action: PayloadAction<Booking>) {
+            // Unshift only if it doesn't already exist to prevent duplicates
+            if (!state.bookings.find(b => b.id === action.payload.id)) {
+                state.bookings.unshift(action.payload);
+            }
+        }
     },
     extraReducers: (builder) => {
         builder
@@ -229,7 +216,9 @@ const bookingSlice = createSlice({
             .addCase(createBooking.pending, (state) => { state.loading = true; state.error = null; })
             .addCase(createBooking.fulfilled, (state, action) => {
                 state.loading = false;
-                state.bookings.unshift(action.payload);
+                if (!state.bookings.find(b => b.id === action.payload.id)) {
+                    state.bookings.unshift(action.payload);
+                }
             })
             .addCase(createBooking.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
             .addCase(updateBooking.fulfilled, (state, action) => {
@@ -252,5 +241,5 @@ const bookingSlice = createSlice({
     },
 });
 
-export const { setBookingForm, clearBookingForm, clearBookingError } = bookingSlice.actions;
+export const { setBookingForm, clearBookingForm, clearBookingError, addBooking } = bookingSlice.actions;
 export default bookingSlice.reducer;

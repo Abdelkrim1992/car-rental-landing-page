@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { motion } from "motion/react";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/HeroSection";
@@ -10,8 +11,16 @@ import { ReviewsSection } from "@/components/ReviewsSection";
 import { FaqSection } from "@/components/FaqSection";
 import { ContactSection } from "@/components/ContactSection";
 import { FooterSection } from "@/components/FooterSection";
+import { useAppDispatch } from "@/store/hooks";
+import { fetchSettings } from "@/store/slices/settingsSlice";
 
 export default function Home() {
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(fetchSettings());
+  }, [dispatch]);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}

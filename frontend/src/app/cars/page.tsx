@@ -27,7 +27,7 @@ export default function CarsPage() {
 
     return (
         <div className="min-h-screen bg-white font-['Inter',sans-serif]">
-            <Navbar />
+            <Navbar variant="transparent"/>
             {/* Page Header */}
             <div className="bg-[#18181b] text-white px-6 md:px-12 lg:px-24 py-12 md:py-16">
                 <motion.h1

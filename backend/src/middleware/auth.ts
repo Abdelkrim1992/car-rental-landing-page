@@ -1,11 +1,16 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { supabaseAdmin } from "../config/supabase.js";
 
 export interface AuthRequest extends Request {
     userId?: string;
 }
 
-export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
+/**
+ * Middleware to verify Supabase JWT tokens.
+ * Since the frontend logs in via Supabase, we MUST verify the token
+ * with Supabase instead of a custom backend secret.
+ */
+export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -16,10 +21,19 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     const token = authHeader.split(" ")[1];
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret") as { sub: string };
-        req.userId = decoded.sub;
+        // Use Supabase to verify the token and get the user
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+        if (error || !user) {
+            res.status(401).json({ error: "Invalid or expired token" });
+            return;
+        }
+
+        // Attach userId to the request for downstream use
+        req.userId = user.id;
         next();
-    } catch {
-        res.status(401).json({ error: "Invalid or expired token" });
+    } catch (err) {
+        console.error("Auth Middleware Error:", err);
+        res.status(401).json({ error: "Authentication failed" });
     }
 }

@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   pickup_date DATE NOT NULL,
   return_date DATE NOT NULL,
   pickup_location VARCHAR(255),
+  booking_lat DOUBLE PRECISION,
+  booking_lng DOUBLE PRECISION,
   status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'completed', 'cancelled')),
   total_price DECIMAL(10, 2) DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -116,3 +118,26 @@ CREATE INDEX IF NOT EXISTS idx_cars_brand ON cars(brand);
 CREATE INDEX IF NOT EXISTS idx_cars_location ON cars(location);
 CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings(user_id);
 CREATE INDEX IF NOT EXISTS idx_reviews_car_id ON reviews(car_id);
+
+-- 8. Agency Settings Table
+CREATE TABLE IF NOT EXISTS agency_settings (
+  id VARCHAR(50) DEFAULT 'default' PRIMARY KEY,
+  business_name VARCHAR(255) NOT NULL,
+  tagline VARCHAR(255),
+  hero_title TEXT,
+  hero_subtitle TEXT,
+  phone VARCHAR(100),
+  email VARCHAR(255),
+  address TEXT,
+  working_hours VARCHAR(255),
+  stats_cars INT DEFAULT 200,
+  stats_rentals INT DEFAULT 5000,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Note: The admin should run this SQL in Supabase dashboard to create the table.
+-- Insert default row:
+-- INSERT INTO agency_settings (id, business_name, tagline, hero_title, hero_subtitle, phone, email, address, working_hours, stats_cars, stats_rentals) 
+-- VALUES ('default', 'Renture', 'Drive Your Dream Car Today.', 'Drive Your Dream
+-- Car Today.', 'Discover The Thrill Of Driving Luxury With Our Exclusive Collection Of Well-Maintained Hypercars And Sports Cars Available For Rent.', '+1 (555) 123-4567', 'hello@renture.com', 'San Francisco, CA', 'Mon — Fri, 9am — 6pm', 200, 5000)
+-- ON CONFLICT (id) DO NOTHING;

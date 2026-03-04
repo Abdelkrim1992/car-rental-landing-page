@@ -4,11 +4,13 @@ import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAppSelector } from "@/store/hooks";
 
 const navLinks = [
     { label: "HOME", href: "/" },
     { label: "ABOUT", href: "/#why-us" },
     { label: "OUR FLEET", href: "/cars" },
+    { label: "CONTACT", href: "/#contact" },
 ];
 
 interface NavbarProps {
@@ -18,6 +20,7 @@ interface NavbarProps {
 export function Navbar({ variant = "solid" }: NavbarProps) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const pathname = usePathname();
+    const settings = useAppSelector((state) => state.settings.data);
 
     const isTransparent = variant === "transparent";
     const textColor = isTransparent ? "text-white" : "text-[#111827]";
@@ -50,7 +53,7 @@ export function Navbar({ variant = "solid" }: NavbarProps) {
 
                 {/* Center Logo */}
                 <Link href="/" className={`absolute left-1/2 -translate-x-1/2 ${textColor} text-[26px] tracking-[0.75px] font-normal font-['Inter']`}>
-                    Renture
+                    {settings?.business_name || "Renture"}
                 </Link>
 
                 {/* Right — Contact Us CTA */}

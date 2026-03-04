@@ -3,10 +3,12 @@ import { useRef } from "react";
 import { footerLocations, footerSiteMapLinks, footerContactInfo } from "@/data/carsData";
 import { motion, useInView } from "motion/react";
 import Link from "next/link";
+import { useAppSelector } from "@/store/hooks";
 
 export function FooterSection() {
     const footerRef = useRef<HTMLElement>(null);
     const isInView = useInView(footerRef, { once: true, margin: "-50px" });
+    const settings = useAppSelector((state) => state.settings.data);
 
     return (
         <footer id="contact" ref={footerRef} className="w-full bg-white">
@@ -39,15 +41,15 @@ export function FooterSection() {
                     className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10 md:mb-12"
                 >
                     <div>
-                        <p className="text-black text-[12px] font-normal font-['Inter']">@2025 Renture Auto</p>
+                        <p className="text-black text-[12px] font-normal font-['Inter']">@2025 {settings?.business_name || "Renture Auto"}</p>
                     </div>
 
                     <div>
                         <h5 className="text-black text-[10px] tracking-[0.5px] uppercase mb-4 font-normal font-['Inter']">HEADQUARTER</h5>
                         <div className="flex flex-col gap-1">
-                            <p className="text-gray-500 text-[10px]">1450 Fifth Avenue, Suite 2300,</p>
-                            <p className="text-gray-500 text-[10px]">Downtown Financial District,</p>
-                            <p className="text-gray-500 text-[10px]">San Francisco, California, 94103,</p>
+                            <p className="text-gray-500 text-[10px]">{settings?.address ? settings.address.split(',')[0] : "1450 Fifth Avenue, Suite 2300,"}</p>
+                            <p className="text-gray-500 text-[10px]">{settings?.address ? settings.address.split(',')[1]?.trim() || "Downtown Financial District" : "Downtown Financial District,"}</p>
+                            <p className="text-gray-500 text-[10px]">{settings?.address || "San Francisco, CA"}</p>
                             <p className="text-gray-500 text-[10px]">United States Of America</p>
                         </div>
                     </div>
@@ -64,8 +66,8 @@ export function FooterSection() {
                     <div>
                         <h5 className="text-black text-[10px] tracking-[0.5px] uppercase mb-4 font-normal font-['Inter']">GET IN TOUCH</h5>
                         <div className="flex flex-col gap-2">
-                            <p className="text-gray-500 text-[10px]">{footerContactInfo.phone}</p>
-                            <a href={`mailto:${footerContactInfo.email}`} className="text-gray-500 text-[10px] hover:text-black transition-colors">{footerContactInfo.email}</a>
+                            <p className="text-gray-500 text-[10px]">{settings?.phone || footerContactInfo.phone}</p>
+                            <a href={`mailto:${settings?.email || footerContactInfo.email}`} className="text-gray-500 text-[10px] hover:text-black transition-colors">{settings?.email || footerContactInfo.email}</a>
                         </div>
                     </div>
                 </motion.div>
@@ -79,7 +81,7 @@ export function FooterSection() {
                     <div className="animate-marquee flex whitespace-nowrap">
                         {[1, 2, 3, 4].map((n) => (
                             <h2 key={n} className="text-[#111827] text-[80px] sm:text-[140px] md:text-[200px] lg:text-[275px] tracking-[-0.05em] uppercase leading-[0.8] font-normal font-['Inter'] select-none px-8" style={{ transform: "scaleY(0.91)" }}>
-                                Renture
+                                {settings?.business_name || "Renture"}
                             </h2>
                         ))}
                     </div>

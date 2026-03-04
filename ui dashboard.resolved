@@ -1,0 +1,70 @@
+# UI Enhancements — Implementation Plan
+
+Five targeted enhancements to the car rental app: fixing navbar scroll, adding a Contact Us page, unifying the cars page with BrowseCarsSection, making dashboard stats dynamic, and adopting shadcn [Card](file:///d:/car%20rental%20landing%20page/frontend/src/components/ui/card.tsx#5-17) for the dashboard overview.
+
+---
+
+## Proposed Changes
+
+### 1. Navbar — Fix Scroll on All Pages
+
+#### [MODIFY] [Navbar.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/Navbar.tsx)
+
+**Problem:** The `transparent` variant uses `absolute` positioning, so when users scroll past the hero it disappears. The `solid` variant is fine (`sticky top-0`).
+
+**Solution:** Add scroll-aware state to the Navbar. When `variant="transparent"`, start as `absolute` (floating over the hero), then switch to `fixed top-0` with a solid background once the user scrolls past a threshold (~50px). Keep existing code structure; just add a `useEffect` scroll listener and a `scrolled` state.
+
+---
+
+### 2. Contact Us Page
+
+#### [NEW] [page.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/app/contact/page.tsx)
+
+Create a dedicated `/contact` route. Reuse the existing [ContactSection](file:///d:/car%20rental%20landing%20page/frontend/src/components/ContactSection.tsx#8-157) component and wrap it with [Navbar](file:///d:/car%20rental%20landing%20page/frontend/src/components/Navbar.tsx#19-100) (solid variant) + `FooterSection`, matching the pattern of other pages. Update the navbar `CONTACT` link to point to `/contact` instead of `/#contact`.
+
+#### [MODIFY] [Navbar.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/Navbar.tsx)
+
+Change the CONTACT nav link `href` from `"/#contact"` to `"/contact"`, and the "Contact Us" CTA button likewise.
+
+---
+
+### 3. Cars Page — Reuse BrowseCarsSection Filter Bar & Card Grid
+
+#### [MODIFY] [page.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/app/cars/page.tsx)
+
+Replace the current plain `<select>` filters and separate card grid with the same styled dropdown-based filter bar and card design from [BrowseCarsSection](file:///d:/car%20rental%20landing%20page/frontend/src/components/BrowseCarsSection.tsx#11-258). This means:
+- Using the custom dropdown buttons (not native `<select>` tags)
+- Using the same card layout (image + name + price + fuel/mileage)
+- Showing **all** cars (no pagination limit of 3 like the home section) with a grid
+- Keeping the page header ("Our Fleet")
+
+---
+
+### 4. Dashboard Statistics — Dynamic & Interactive with Date Ranges
+
+#### [MODIFY] [StatisticCard.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/StatisticCard.tsx)
+
+- Add `"24_hours"` to the time range type union
+- Add "Last 24 hours" as a dropdown option in the UI
+- Filter bookings for 24h using [daysInMs(1)](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/StatisticCard.tsx#63-64) (or `24 * 60 * 60 * 1000`)
+- Compute actual percentage changes by comparing the selected period to the previous equivalent period for truly dynamic stats
+
+---
+
+### 5. Dashboard Overview — Use shadcn Card
+
+#### [MODIFY] [StatisticCard.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/StatisticCard.tsx)
+
+Replace the outer `<div>` wrapper and the [StatItem](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/StatisticCard.tsx#19-43) inner structure with shadcn [Card](file:///d:/car%20rental%20landing%20page/frontend/src/components/ui/card.tsx#5-17), [CardHeader](file:///d:/car%20rental%20landing%20page/frontend/src/components/ui/card.tsx#18-30), [CardTitle](file:///d:/car%20rental%20landing%20page/frontend/src/components/ui/card.tsx#31-40), [CardContent](file:///d:/car%20rental%20landing%20page/frontend/src/components/ui/card.tsx#64-73) primitives imported from `@/components/ui/card`. This gives a consistent, polished shadcn look to the dashboard overview.
+
+---
+
+## Verification Plan
+
+### Browser Testing
+1. Run `npm run dev` (already running)
+2. Verify navbar scroll on home page: scroll down, navbar should become fixed with a solid background
+3. Navigate to `/cars`, `/cars/{id}`, `/booking`, `/contact` — navbar should behave consistently
+4. Visit `/contact` — should show the contact form + info
+5. Visit `/cars` — should show the same styled dropdown filter bar and card grid as the home page
+6. Visit `/dashboard` — statistics card should show "Last 24 hours" option and use shadcn Card styling with actual dynamic percentage changes

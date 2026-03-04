@@ -23,20 +23,22 @@ const initialState: MessagesState = {
     error: null,
 };
 
-// Admin: fetch ALL messages
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+// Admin: fetch ALL messages via API
 export const fetchMessages = createAsyncThunk("messages/fetchMessages", async (_, { rejectWithValue }) => {
     try {
         const supabase = createClient();
-        const { data, error } = await supabase
-            .from("messages")
-            .select("*")
-            .order("created_at", { ascending: false });
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token || "";
 
-        if (error) {
-            throw new Error(error.message);
-        }
+        const response = await fetch(`${API_URL}/messages`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
 
-        return (data || []) as Message[];
+        if (!response.ok) throw new Error("Failed to fetch messages");
+        const data = await response.json();
+        return data as Message[];
     } catch (err) {
         return rejectWithValue(err instanceof Error ? err.message : "Failed to fetch messages");
     }
@@ -47,19 +49,18 @@ export const sendMessage = createAsyncThunk(
     "messages/sendMessage",
     async (messageData: Omit<Message, "id" | "status" | "created_at">, { rejectWithValue }) => {
         try {
-            const supabase = createClient();
-            const { data, error } = await supabase
-                .from("messages")
-                .insert({
-                    ...messageData,
-                    status: "unread",
-                })
-                .select("*")
-                .single();
+            const response = await fetch(`${API_URL}/messages`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(messageData),
+            });
 
-            if (error) {
-                throw new Error(error.message);
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || "Failed to send message");
             }
+
+            const data = await response.json();
             return data as Message;
         } catch (err) {
             return rejectWithValue(err instanceof Error ? err.message : "Failed to send message");
@@ -67,17 +68,21 @@ export const sendMessage = createAsyncThunk(
     }
 );
 
-// Admin: mark message as read
+// Admin: mark message as read via API
 export const markMessageRead = createAsyncThunk(
     "messages/markMessageRead",
     async (id: string, { rejectWithValue }) => {
         try {
             const supabase = createClient();
-            const { error } = await supabase
-                .from("messages")
-                .update({ status: "read" })
-                .eq("id", id);
-            if (error) throw new Error(error.message);
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || "";
+
+            const response = await fetch(`${API_URL}/messages/${id}/read`, {
+                method: "PATCH",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error("Failed to mark read");
             return id;
         } catch (err) {
             console.warn("Failed to mark message as read.", err);
@@ -86,14 +91,21 @@ export const markMessageRead = createAsyncThunk(
     }
 );
 
-// Admin: delete message
+// Admin: delete message via API
 export const deleteMessage = createAsyncThunk(
     "messages/deleteMessage",
     async (id: string, { rejectWithValue }) => {
         try {
             const supabase = createClient();
-            const { error } = await supabase.from("messages").delete().eq("id", id);
-            if (error) throw new Error(error.message);
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || "";
+
+            const response = await fetch(`${API_URL}/messages/${id}`, {
+                method: "DELETE",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error("Failed to delete");
             return id;
         } catch (err) {
             return rejectWithValue(err instanceof Error ? err.message : "Failed to delete message");
@@ -104,7 +116,14 @@ export const deleteMessage = createAsyncThunk(
 const messagesSlice = createSlice({
     name: "messages",
     initialState,
-    reducers: {},
+    reducers: {
+        addMessage: (state, action: PayloadAction<Message>) => {
+            // Check if message already exists
+            if (!state.messages.find(m => m.id === action.payload.id)) {
+                state.messages.unshift(action.payload);
+            }
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(fetchMessages.pending, (state) => { state.loading = true; })
@@ -117,7 +136,10 @@ const messagesSlice = createSlice({
                 state.error = action.payload as string;
             })
             .addCase(sendMessage.fulfilled, (state, action) => {
-                state.messages.unshift(action.payload);
+                // If the message wasn't already added by a WebSocket event, add it
+                if (!state.messages.find(m => m.id === action.payload.id)) {
+                    state.messages.unshift(action.payload);
+                }
             })
             .addCase(sendMessage.rejected, (state, action) => {
                 state.error = action.payload as string;
@@ -132,4 +154,6 @@ const messagesSlice = createSlice({
     },
 });
 
+export const { addMessage } = messagesSlice.actions;
 export default messagesSlice.reducer;
+

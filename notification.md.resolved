@@ -1,0 +1,131 @@
+# WebSocket Realtime Notifications & Admin Agency Settings
+
+Two features: (1) Replace Supabase Realtime with a custom WebSocket server for instant dashboard notifications on new bookings and contact messages, (2) Allow admin to manage agency info from the dashboard settings and have changes reflected on the home page.
+
+## Proposed Changes
+
+### Feature 1: WebSocket Realtime Notifications
+
+---
+
+#### Backend — WebSocket Server
+
+#### [MODIFY] [package.json](file:///d:/car%20rental%20landing%20page/backend/package.json)
+- Add [ws](file:///d:/car%20rental%20landing%20page/frontend/src/data/carsData.ts#48-61) dependency for WebSocket server support
+
+#### [MODIFY] [index.ts](file:///d:/car%20rental%20landing%20page/backend/src/index.ts)
+- Create an HTTP server wrapping the Express app
+- Attach a `WebSocketServer` (from [ws](file:///d:/car%20rental%20landing%20page/frontend/src/data/carsData.ts#48-61)) to it, listening on the same port
+- Export the `wss` instance for use in routes
+- Broadcast helper: `broadcastEvent(type, data)` sends JSON to all connected clients
+
+#### [MODIFY] [bookings.ts](file:///d:/car%20rental%20landing%20page/backend/src/routes/bookings.ts)
+- After a successful `POST /api/bookings` insert, call `broadcastEvent("NEW_BOOKING", bookingData)` to notify all connected dashboard clients
+
+#### [NEW] [messages.ts](file:///d:/car%20rental%20landing%20page/backend/src/routes/messages.ts)
+- `POST /api/messages` — accepts `{ name, email, phone, message }`, inserts into Supabase `messages` table, and calls `broadcastEvent("NEW_MESSAGE", msgData)`
+- This replaces the current direct Supabase insert from the frontend `sendMessage` thunk
+
+---
+
+#### Frontend — WebSocket Consumer
+
+#### [MODIFY] [messagesSlice.ts](file:///d:/car%20rental%20landing%20page/frontend/src/store/slices/messagesSlice.ts)
+- Change `sendMessage` thunk to call `POST /api/messages` on the backend instead of directly inserting into Supabase
+- Add a `addMessage` reducer for pushing a message from WebSocket events
+
+#### [MODIFY] [bookingSlice.ts](file:///d:/car%20rental%20landing%20page/frontend/src/store/slices/bookingSlice.ts)
+- Add a `addBooking` reducer for pushing a booking from WebSocket events
+
+#### [MODIFY] [RealtimeNotifications.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/RealtimeNotifications.tsx)
+- Replace Supabase Realtime channels with a native `WebSocket` connection to `ws://localhost:5000`
+- On receiving JSON messages, dispatch `addBooking` / `addMessage` and show toast notifications
+- Auto-reconnect on disconnect
+
+---
+
+### Feature 2: Admin Agency Settings
+
+---
+
+#### Database Schema
+
+#### [MODIFY] [schema.sql](file:///d:/car%20rental%20landing%20page/backend/schema.sql)
+- Add `agency_settings` table with columns: [id](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/Sidebar.tsx#35-306), `business_name`, `tagline`, `hero_title`, `hero_subtitle`, `phone`, `email`, `address`, `working_hours`, `updated_at`
+- Insert a default row with current hardcoded values
+
+> [!IMPORTANT]
+> The admin must run the new SQL migration in the Supabase SQL Editor to create the `agency_settings` table before using this feature.
+
+---
+
+#### Backend Routes
+
+#### [NEW] [settings.ts](file:///d:/car%20rental%20landing%20page/backend/src/routes/settings.ts)
+- `GET /api/settings` — Public, returns agency settings row
+- `PUT /api/settings` — Protected (admin only), updates agency settings
+
+#### [MODIFY] [index.ts](file:///d:/car%20rental%20landing%20page/backend/src/index.ts)
+- Register `settingsRouter` at `/api/settings`
+
+---
+
+#### Frontend — Redux & Settings Page
+
+#### [NEW] [settingsSlice.ts](file:///d:/car%20rental%20landing%20page/frontend/src/store/slices/settingsSlice.ts)
+- `AgencySettings` interface matching the DB schema
+- `fetchSettings` thunk — `GET /api/settings`
+- `updateSettings` thunk — `PUT /api/settings`
+- Reducer stores settings in state
+
+#### [MODIFY] [store.ts](file:///d:/car%20rental%20landing%20page/frontend/src/store/store.ts)
+- Register `settingsReducer`
+
+#### [MODIFY] [settings/page.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/app/dashboard/settings/page.tsx)
+- Make the Agency Profile card functional: load settings on mount, bind inputs to state, save on submit
+- Add fields: business name, tagline, hero title, hero subtitle, phone, email, address, working hours
+
+---
+
+#### Frontend — Home Page Consuming Settings
+
+#### [MODIFY] [page.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/app/page.tsx)
+- Fetch agency settings on mount via `dispatch(fetchSettings())`
+
+#### [MODIFY] [HeroSection.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/HeroSection.tsx)
+- Read `hero_title` and `hero_subtitle` from Redux `settings` state instead of hardcoded text
+
+#### [MODIFY] [ContactSection.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/ContactSection.tsx)
+- Read `phone`, `email`, `address`, `working_hours` from Redux `settings` state
+
+#### [MODIFY] [FooterSection.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/FooterSection.tsx)
+- Read `business_name`, `phone`, `email` from Redux `settings` state
+
+#### [MODIFY] [Navbar.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/Navbar.tsx)
+- Read `business_name` from settings if it exists
+
+---
+
+## Verification Plan
+
+### Automated Tests (Browser QA)
+
+For **Feature 1** (WebSocket Notifications):
+1. Start the backend (`npm run dev` in `backend/`)
+2. Start the frontend (`npm run dev` in `frontend/`)
+3. Open the admin dashboard at `http://localhost:3000/dashboard`
+4. In a separate tab, go to `http://localhost:3000` and scroll to the Contact section
+5. Fill out and submit the contact form
+6. **Verify**: A toast notification appears in the dashboard tab saying "New Message from Contact Form"
+7. Navigate to a car detail page and submit a booking
+8. **Verify**: A toast notification appears in the dashboard tab saying "New Booking Received!"
+
+For **Feature 2** (Agency Settings):
+1. Log in to the admin dashboard
+2. Navigate to Settings
+3. Change the Business Name to "TestAgency" and the Hero Title to "Custom Hero Title"
+4. Click Save Changes → verify success toast
+5. Navigate to `http://localhost:3000` (home page)
+6. **Verify**: The hero section shows "Custom Hero Title" instead of the default
+7. **Verify**: The footer shows "TestAgency" instead of "Renture"
+8. Return to settings, change values back, save, and confirm home page reverts

@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { motion, useInView } from "motion/react";
 import { Send, Phone, Mail, MapPin } from "lucide-react";
-import { useAppDispatch } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { sendMessage } from "@/store/slices/messagesSlice";
 
 export function ContactSection() {
@@ -10,6 +10,7 @@ export function ContactSection() {
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
     const [submitted, setSubmitted] = useState(false);
     const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+    const settings = useAppSelector(state => state.settings.data);
 
     const dispatch = useAppDispatch();
     const handleSubmit = async (e: React.FormEvent) => {
@@ -46,8 +47,8 @@ export function ContactSection() {
                                     <Phone size={16} className="text-white/60" />
                                 </div>
                                 <div>
-                                    <p className="text-white text-[13px]">+1 (555) 123-4567</p>
-                                    <p className="text-gray-500 text-[10px] uppercase tracking-[1px]">Mon — Fri, 9am — 6pm</p>
+                                    <p className="text-white text-[13px]">{settings?.phone || "+1 (555) 123-4567"}</p>
+                                    <p className="text-gray-500 text-[10px] uppercase tracking-[1px]">{settings?.working_hours || "Mon — Fri, 9am — 6pm"}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
@@ -55,7 +56,7 @@ export function ContactSection() {
                                     <Mail size={16} className="text-white/60" />
                                 </div>
                                 <div>
-                                    <p className="text-white text-[13px]">hello@renture.com</p>
+                                    <p className="text-white text-[13px]">{settings?.email || "hello@renture.com"}</p>
                                     <p className="text-gray-500 text-[10px] uppercase tracking-[1px]">Response in 24h</p>
                                 </div>
                             </div>
@@ -64,7 +65,7 @@ export function ContactSection() {
                                     <MapPin size={16} className="text-white/60" />
                                 </div>
                                 <div>
-                                    <p className="text-white text-[13px]">San Francisco, CA</p>
+                                    <p className="text-white text-[13px]">{settings?.address || "San Francisco, CA"}</p>
                                     <p className="text-gray-500 text-[10px] uppercase tracking-[1px]">Headquarters</p>
                                 </div>
                             </div>

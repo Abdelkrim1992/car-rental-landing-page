@@ -1,8 +1,8 @@
-"use client";
 import { useState, useEffect, useRef } from "react";
 import { imgHeroBg } from "@/data/carsData";
 import { motion, useInView } from "motion/react";
 import Link from "next/link";
+import { useAppSelector } from "@/store/hooks";
 
 function AnimatedCounter({ target }: { target: number }) {
     const [count, setCount] = useState(0);
@@ -30,13 +30,15 @@ function AnimatedCounter({ target }: { target: number }) {
 }
 
 export function HeroSection() {
+    const settings = useAppSelector((state) => state.settings.data);
+
     return (
         <section id="hero" className="relative w-full min-h-[600px] md:min-h-[800px] overflow-hidden -mt-[72px] pt-[72px]">
             {/* Background Image */}
             <div className="absolute inset-0">
                 <img
                     src={imgHeroBg}
-                    alt="White Porsche GT3 RS on mountain road"
+                    alt="Hero Background"
                     className="w-full h-full object-cover"
                     loading="eager"
                     decoding="async"
@@ -54,17 +56,16 @@ export function HeroSection() {
                         transition={{ duration: 0.8, ease: "easeOut" }}
                         className="pt-16 md:pt-24 lg:pt-32 pb-8 md:pb-12"
                     >
-                        <h1 className="text-white font-normal font-['Inter'] text-[48px] md:text-[72px] lg:text-[96px] leading-[1] mb-4 md:mb-6">
-                            Drive Your Dream<br />Car Today.
+                        <h1 className="text-white font-normal font-['Inter'] text-[48px] md:text-[72px] lg:text-[96px] leading-[1] mb-4 md:mb-6 whitespace-pre-line">
+                            {settings?.hero_title || "Drive Your Dream\nCar Today."}
                         </h1>
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-                            className="text-gray-200 text-[14px] md:text-[16px] leading-[24px] max-w-[512px] mb-6"
+                            className="text-gray-200 text-[14px] md:text-[16px] leading-[24px] max-w-[512px] mb-6 whitespace-pre-line"
                         >
-                            Discover The Thrill Of Driving Luxury With Our Exclusive Collection
-                            Of Well-Maintained Hypercars And Sports Cars Available For Rent.
+                            {settings?.hero_subtitle || "Discover The Thrill Of Driving Luxury With Our Exclusive Collection Of Well-Maintained Hypercars And Sports Cars Available For Rent."}
                         </motion.p>
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
@@ -89,7 +90,7 @@ export function HeroSection() {
                             className="flex flex-col gap-1"
                         >
                             <span className="text-white text-[28px] md:text-[36px] leading-[40px] font-normal font-['Inter']">
-                                <AnimatedCounter target={200} />
+                                <AnimatedCounter target={settings?.stats_cars || 200} />
                             </span>
                             <p className="text-gray-300 text-[12px]">
                                 Luxury Sports Cars<br />Ready To Rent.
@@ -103,7 +104,7 @@ export function HeroSection() {
                             className="flex flex-col gap-1"
                         >
                             <span className="text-white text-[28px] md:text-[36px] leading-[40px] font-normal font-['Inter']">
-                                <AnimatedCounter target={5000} />
+                                <AnimatedCounter target={settings?.stats_rentals || 5000} />
                             </span>
                             <p className="text-gray-300 text-[12px] leading-[15px]">
                                 Successful Rentals<br />Completed<br />Worldwide.

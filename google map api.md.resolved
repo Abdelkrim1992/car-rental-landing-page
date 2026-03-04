@@ -1,0 +1,93 @@
+# Google Maps Integration for Dashboard Booking Order Tracking
+
+Integrate Google Maps API into the admin dashboard so that booking orders are detected by location and displayed as interactive markers on a real map.
+
+## User Review Required
+
+> [!IMPORTANT]
+> You will need a **Google Maps API key** with the following APIs enabled:
+> - Maps JavaScript API
+> - Geocoding API
+>
+> Please provide your API key so I can add it to [.env.local](file:///d:/car%20rental%20landing%20page/frontend/.env.local) as `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
+
+> [!NOTE]
+> **Approach: Client-Side Geocoding** — When the booking form is submitted, we'll use the Google Geocoding API to convert the `pickup_location` text into lat/lng coordinates and store them in Supabase. For existing bookings without coordinates, the dashboard map will geocode them on-the-fly and cache the results.
+
+---
+
+## Proposed Changes
+
+### 1. Dependencies & Environment
+
+#### [MODIFY] [package.json](file:///d:/car%20rental%20landing%20page/frontend/package.json)
+- Install `@react-google-maps/api` — the standard React wrapper for Google Maps JS API
+
+#### [MODIFY] [.env.local](file:///d:/car%20rental%20landing%20page/frontend/.env.local)
+- Add `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<user-provided-key>`
+
+---
+
+### 2. Database Schema
+
+#### [MODIFY] [schema.sql](file:///d:/car%20rental%20landing%20page/backend/schema.sql)
+- Add `booking_lat DOUBLE PRECISION` and `booking_lng DOUBLE PRECISION` columns to the `bookings` table
+- These store geocoded coordinates from the pickup location
+
+---
+
+### 3. Redux Store — Booking Slice
+
+#### [MODIFY] [bookingSlice.ts](file:///d:/car%20rental%20landing%20page/frontend/src/store/slices/bookingSlice.ts)
+- Add `booking_lat` and `booking_lng` to the [Booking](file:///d:/car%20rental%20landing%20page/frontend/src/store/slices/bookingSlice.ts#4-20) interface
+- Update `createBooking` thunk to geocode the `pickup_location` before inserting into Supabase
+- Update `fetchBookings` to include `booking_lat` and `booking_lng` from the database
+- Add a `geocodeLocation` utility function that calls the Google Geocoding API
+
+---
+
+### 4. Dashboard Map Component
+
+#### [MODIFY] [MapTracking.tsx](file:///d:/car%20rental%20landing%20page/frontend/src/components/dashboard/MapTracking.tsx)
+Complete rewrite — replace static placeholder with interactive Google Map:
+
+- **Google Map rendering** via `@react-google-maps/api` (`GoogleMap`, `LoadScript`)
+- **Booking markers**: Read bookings from Redux store, place `Marker` on map for each booking with coordinates
+- **On-the-fly geocoding**: For existing bookings without lat/lng, geocode `pickup_location` client-side and display
+- **Info windows**: Click a marker to see a popup with booking details (car name, guest name, phone, dates, status)
+- **Status color-coding**: Markers colored by status (🟡 pending, 🟢 confirmed, 🔵 completed, ⚫ cancelled)
+- **Search bar**: Filter visible markers by guest name, car name, or location text
+- **Auto-fit bounds**: Map auto-zooms to fit all visible markers
+
+---
+
+### 5. Booking Form — Geocode on Submit
+
+#### [MODIFY] [page.tsx (booking)](file:///d:/car%20rental%20landing%20page/frontend/src/app/booking/page.tsx)
+- Update `createBooking` dispatch call to also pass geocoded lat/lng from the pickup location
+
+---
+
+## Verification Plan
+
+### Browser Testing (QA)
+1. **Navigate to dashboard** at `http://localhost:3000/dashboard`
+   - Verify the Google Map renders instead of the static placeholder image
+   - Verify the map is interactive (pan, zoom)
+
+2. **Check booking markers**
+   - Verify existing bookings appear as colored markers on the map
+   - Verify markers are color-coded by status (pending=yellow, confirmed=green, etc.)
+
+3. **Click a marker**
+   - Verify an info window opens showing car name, guest name, phone, dates, and status
+
+4. **Search functionality**
+   - Type a guest name or car name in the search bar
+   - Verify markers filter to show only matching bookings
+
+5. **Create a new booking** via the booking page
+   - Verify the new booking appears as a marker on the dashboard map after refresh
+
+6. **Console errors**
+   - Check browser console for any JavaScript errors or Google Maps API warnings

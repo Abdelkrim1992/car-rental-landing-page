@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { initAuth } from "@/store/slices/authSlice";
 import { fetchBookings } from "@/store/slices/bookingSlice";
+import { fetchMessages } from "@/store/slices/messagesSlice";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { Header } from "@/components/dashboard/Header";
 import { RealtimeNotifications } from "@/components/dashboard/RealtimeNotifications";
@@ -35,6 +36,7 @@ export default function DashboardLayout({
     useEffect(() => {
         if (user) {
             dispatch(fetchBookings());
+            dispatch(fetchMessages());
         }
     }, [user, dispatch]);
 
