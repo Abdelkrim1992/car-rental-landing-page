@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { browseCars, carTypes, carBrands, carLocations } from "@/data/carsData";
 import svgPaths from "@/lib/svgPaths";
@@ -9,6 +9,7 @@ import Link from "next/link";
 const CARS_PER_PAGE = 3;
 
 export function BrowseCarsSection() {
+    const [cars, setCars] = useState<any[]>([]);
     const [selectedType, setSelectedType] = useState("All Types");
     const [selectedBrand, setSelectedBrand] = useState("All Brands");
     const [selectedLocation, setSelectedLocation] = useState("All Locations");
@@ -19,14 +20,30 @@ export function BrowseCarsSection() {
     const sectionRef = useRef<HTMLElement>(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
 
+    useEffect(() => {
+        const fetchCars = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://atlasrentalcar-backend.netlify.app/api'}/cars`);
+                if (!res.ok) throw new Error("Failed to fetch cars");
+                const data = await res.json();
+                setCars(data);
+            } catch (error) {
+                console.error("Error fetching cars:", error);
+                setCars(browseCars); // fallback to static data
+            }
+        };
+
+        fetchCars();
+    }, []);
+
     const filteredCars = useMemo(() => {
-        return browseCars.filter((car) => {
+        return cars.filter((car) => {
             const typeMatch = selectedType === "All Types" || car.type === selectedType;
             const brandMatch = selectedBrand === "All Brands" || car.brand === selectedBrand;
             const locationMatch = selectedLocation === "All Locations" || car.location === selectedLocation;
             return typeMatch && brandMatch && locationMatch;
         });
-    }, [selectedType, selectedBrand, selectedLocation]);
+    }, [cars, selectedType, selectedBrand, selectedLocation]);
 
     const totalPages = Math.ceil(filteredCars.length / CARS_PER_PAGE);
     const paginatedCars = filteredCars.slice(

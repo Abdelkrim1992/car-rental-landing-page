@@ -24,11 +24,25 @@ initWebSocketServer(server);
 
 // Middleware
 app.use(cors({
-    origin: [
-        process.env.FRONTEND_URL || "http://localhost:3000",
-        "http://localhost:3001",
-        "https://rentalcarluxury.netlify.app",
-    ],
+    origin: function (origin, callback) {
+        const allowedOrigins: string[] = [];
+
+        if (process.env.FRONTEND_URL) {
+            allowedOrigins.push(process.env.FRONTEND_URL);
+        }
+
+        // Only allow localhost if we are not in a production environment
+        if (process.env.NODE_ENV !== "production") {
+            allowedOrigins.push("http://localhost:3000", "http://localhost:3001");
+        }
+
+        // Allow requests with no origin (e.g. mobile apps, curl) or if origin is in the list
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],

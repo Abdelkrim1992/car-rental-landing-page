@@ -13,7 +13,13 @@ export function RealtimeNotifications(): React.ReactNode {
 
     useEffect(() => {
         const connectWs = () => {
-            const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://atlasrentalcar-backend.netlify.app";
+            let WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://atlasrentalcar-backend.netlify.app";
+
+            // Automatically upgrade to wss:// if we are running over https://
+            if (typeof window !== "undefined" && window.location.protocol === "https:") {
+                WS_URL = WS_URL.replace(/^ws:/i, "wss:");
+            }
+
             ws.current = new WebSocket(WS_URL);
 
             ws.current.onopen = () => {

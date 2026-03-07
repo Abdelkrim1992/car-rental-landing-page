@@ -22,7 +22,7 @@ export function Navbar({ variant = "solid" }: NavbarProps) {
     const pathname = usePathname();
     const settings = useAppSelector((state) => state.settings.data);
 
-    const isTransparent = variant === "transparent";
+    const isTransparent = false; // Forced to false
     const textColor = isTransparent ? "text-white" : "text-[#111827]";
     const textMuted = isTransparent ? "text-white/70" : "text-gray-500";
     const mobileBg = isTransparent ? "bg-black/90" : "bg-white";

@@ -9,25 +9,43 @@ import { useAppDispatch } from "@/store/hooks";
 import { initAuth } from "@/store/slices/authSlice";
 
 export default function CarsPage() {
+    const [cars, setCars] = useState<any[]>([]);
     const [selectedType, setSelectedType] = useState("All Types");
     const [selectedBrand, setSelectedBrand] = useState("All Brands");
     const [selectedLocation, setSelectedLocation] = useState("All Locations");
     const dispatch = useAppDispatch();
 
-    useEffect(() => { dispatch(initAuth()); }, [dispatch]);
+    useEffect(() => {
+        dispatch(initAuth());
+
+        // Fetch cars from API
+        const fetchCars = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://atlasrentalcar-backend.netlify.app/api'}/cars`);
+                if (!res.ok) throw new Error("Failed to fetch cars");
+                const data = await res.json();
+                setCars(data);
+            } catch (error) {
+                console.error("Error fetching cars:", error);
+                setCars(browseCars); // fallback to static data
+            }
+        };
+
+        fetchCars();
+    }, [dispatch]);
 
     const filteredCars = useMemo(() => {
-        return browseCars.filter((car) => {
+        return cars.filter((car) => {
             const typeMatch = selectedType === "All Types" || car.type === selectedType;
             const brandMatch = selectedBrand === "All Brands" || car.brand === selectedBrand;
             const locationMatch = selectedLocation === "All Locations" || car.location === selectedLocation;
             return typeMatch && brandMatch && locationMatch;
         });
-    }, [selectedType, selectedBrand, selectedLocation]);
+    }, [cars, selectedType, selectedBrand, selectedLocation]);
 
     return (
         <div className="min-h-screen bg-white font-['Inter',sans-serif]">
-            <Navbar variant="transparent"/>
+            <Navbar variant="transparent" />
             {/* Page Header */}
             <div className="bg-[#18181b] text-white px-6 md:px-12 lg:px-24 py-12 md:py-16">
                 <motion.h1
