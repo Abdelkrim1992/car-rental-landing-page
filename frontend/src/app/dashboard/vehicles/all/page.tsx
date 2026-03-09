@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { deleteCar, fetchCars } from "@/store/slices/carsSlice";
+import { deleteCar, deleteCars, fetchCars } from "@/store/slices/carsSlice";
 import { ConfirmModal } from "@/components/dashboard/ConfirmModal";
 import {
     Card,
@@ -26,10 +26,11 @@ import {
     Tabs,
     Tab
 } from "@heroui/react";
-import { Car, Settings2, ShieldCheck, Plus, LayoutGrid, List, MoreVertical, Eye, Edit, Trash, MapPin, Fuel, Gauge } from "lucide-react";
+import { Car, Settings2, ShieldCheck, Plus, LayoutGrid, List, MoreVertical, Eye, Edit, Trash, MapPin, Fuel, Gauge, X, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function AllVehiclesPage() {
     const { cars } = useAppSelector((state) => state.cars);
@@ -37,8 +38,10 @@ export default function AllVehiclesPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [rowsPerPage, setRowsPerPage] = useState("5");
     const [viewMode, setViewMode] = useState("table");
+    const [selectedKeys, setSelectedKeys] = useState<any>(new Set([]));
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingVehicle, setDeletingVehicle] = useState<{ id: string, name: string } | null>(null);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
     const rows = parseInt(rowsPerPage);
@@ -52,17 +55,37 @@ export default function AllVehiclesPage() {
 
     const handleDeleteVehicle = (id: string, name: string) => {
         setDeletingVehicle({ id, name });
+        setIsBulkDeleting(false);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleBulkDelete = () => {
+        setIsBulkDeleting(true);
+        setDeletingVehicle(null);
         setIsDeleteModalOpen(true);
     };
 
     const confirmDelete = async () => {
-        if (!deletingVehicle) return;
         setIsDeleting(true);
         try {
-            await dispatch(deleteCar(deletingVehicle.id)).unwrap();
+            if (isBulkDeleting) {
+                const ids = selectedKeys === "all"
+                    ? paginatedCars.map(c => c.id)
+                    : Array.from(selectedKeys) as string[];
+
+                if (ids.length === 0) return;
+
+                await dispatch(deleteCars(ids)).unwrap();
+                setSelectedKeys(new Set([]));
+                toast.success(`Successfully deleted ${ids.length} vehicles`);
+            } else if (deletingVehicle) {
+                await dispatch(deleteCar(deletingVehicle.id)).unwrap();
+                toast.success(`Vehicle "${deletingVehicle.name}" deleted successfully`);
+            }
             setIsDeleteModalOpen(false);
-        } catch (err) {
-            console.error("Failed to delete vehicle:", err);
+        } catch (error: any) {
+            console.error("Delete error:", error);
+            toast.error(error || "Failed to delete vehicle(s). This might be because the vehicle has active bookings.");
         } finally {
             setIsDeleting(false);
             setDeletingVehicle(null);
@@ -103,6 +126,35 @@ export default function AllVehiclesPage() {
                     </Button>
                 </div>
             </div>
+
+            {(selectedKeys === "all" || selectedKeys.size > 0) && (
+                <Card className="bg-primary-50 border-primary-200">
+                    <CardBody className="py-2 px-4 flex flex-row items-center justify-between">
+                        <p className="text-sm font-medium text-primary-700">
+                            {selectedKeys === "all" ? paginatedCars.length : selectedKeys.size} vehicles selected
+                        </p>
+                        <div className="flex gap-2">
+                            <Button
+                                color="danger"
+                                size="sm"
+                                variant="flat"
+                                startContent={<Trash2 size={16} />}
+                                onPress={handleBulkDelete}
+                            >
+                                Delete Selected
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="light"
+                                startContent={<X size={16} />}
+                                onPress={() => setSelectedKeys(new Set([]))}
+                            >
+                                Clear
+                            </Button>
+                        </div>
+                    </CardBody>
+                </Card>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card>
@@ -164,6 +216,9 @@ export default function AllVehiclesPage() {
                         <Table
                             aria-label="Fleet table"
                             removeWrapper
+                            selectionMode="multiple"
+                            selectedKeys={selectedKeys}
+                            onSelectionChange={setSelectedKeys}
                         >
                             <TableHeader>
                                 <TableColumn>Vehicle</TableColumn>
@@ -336,9 +391,12 @@ export default function AllVehiclesPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmDelete}
-                title="Delete Vehicle"
-                message={`Are you sure you want to permanently remove the ${deletingVehicle?.name} from your fleet?`}
                 isLoading={isDeleting}
+                title={isBulkDeleting ? "Delete Selected Vehicles" : "Delete Vehicle"}
+                message={isBulkDeleting
+                    ? `Are you sure you want to permanently remove ${selectedKeys === 'all' ? paginatedCars.length : selectedKeys.size} selected vehicles?`
+                    : `Are you sure you want to permanently remove the vehicle "${deletingVehicle?.name}"?`
+                }
             />
         </div>
     );

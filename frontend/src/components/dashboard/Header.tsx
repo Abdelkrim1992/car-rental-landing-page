@@ -60,7 +60,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
         return {
             unreadNotifications: combined.filter(n => n.isNew),
-            allNotifications: combined.slice(0, 5)
+            allNotifications: combined.slice(0, 20)
         };
     }, [notifications]);
 
@@ -121,6 +121,7 @@ export function Header({ onMenuClick }: HeaderProps) {
                         aria-label="Notifications"
                         className="p-0 min-w-[320px]"
                         variant="flat"
+                        closeOnSelect={false}
                     >
                         <DropdownSection
                             title="Notifications"
@@ -130,35 +131,37 @@ export function Header({ onMenuClick }: HeaderProps) {
                                     <p className="text-foreground-400">No notifications</p>
                                 </DropdownItem>
                             ) : (
-                                displayList.map((n) => (
-                                    <DropdownItem
-                                        key={`${n.type}-${n.id}`}
-                                        className={`px-4 py-3 border-b last:border-0 ${n.isNew ? "bg-primary-50" : ""}`}
-                                        onPress={() => dispatch(markNotificationRead(n.id))}
-                                        textValue={n.title}
-                                    >
-                                        <Link href={n.link} className="flex gap-4 w-full">
-                                            <div className="p-2 rounded-lg bg-default-100">
-                                                {n.type === 'booking' ? <Car className="size-4" /> : <MessageSquare className="size-4" />}
-                                            </div>
-                                            <div className="flex flex-col flex-1">
-                                                <div className="flex justify-between items-center gap-2">
-                                                    <span className="text-xs font-semibold">{n.title}</span>
-                                                    <span className="text-[10px] text-foreground-400">
-                                                        {new Date(n.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
+                                <DropdownItem key="scroll-wrapper" className="p-0">
+                                    <ScrollShadow className="max-h-[350px] overflow-y-auto">
+                                        {displayList.map((n) => (
+                                            <Link
+                                                key={`${n.type}-${n.id}`}
+                                                href={n.link}
+                                                onClick={() => dispatch(markNotificationRead(n.id))}
+                                                className={`flex gap-4 p-4 border-b last:border-0 hover:bg-default-100 transition-colors w-full cursor-pointer ${n.isNew ? "bg-primary-50" : ""}`}
+                                            >
+                                                <div className="p-2 rounded-lg bg-default-100 h-fit">
+                                                    {n.type === 'booking' ? <Car className="size-4" /> : <MessageSquare className="size-4" />}
                                                 </div>
-                                                <p className="text-[11px] text-foreground-500 line-clamp-2">
-                                                    {n.description}
-                                                </p>
-                                            </div>
-                                        </Link>
-                                    </DropdownItem>
-                                ))
+                                                <div className="flex flex-col flex-1">
+                                                    <div className="flex justify-between items-center gap-2">
+                                                        <span className="text-xs font-semibold">{n.title}</span>
+                                                        <span className="text-[10px] text-foreground-400">
+                                                            {new Date(n.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-[11px] text-foreground-500 line-clamp-2">
+                                                        {n.description}
+                                                    </p>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </ScrollShadow>
+                                </DropdownItem>
                             )}
                         </DropdownSection>
                         <DropdownSection className="p-2 border-t border-default-100">
-                            <DropdownItem key="actions" className="p-0 pointer-events-none">
+                            <DropdownItem key="actions" className="p-0">
                                 <div className="flex items-center justify-between gap-2">
                                     <Button
                                         size="sm"

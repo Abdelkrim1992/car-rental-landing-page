@@ -25,9 +25,10 @@ import {
     SelectItem,
     Skeleton
 } from "@heroui/react";
-import { Phone, MapPin, Plus, MoreVertical, Check, X, Eye, Calendar } from "lucide-react";
+import { Phone, MapPin, Plus, MoreVertical, Check, X, Eye, Calendar, Car } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
+import { toast } from "sonner";
 
 export default function BookingsPage() {
     const dispatch = useAppDispatch();
@@ -38,6 +39,7 @@ export default function BookingsPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         dispatch(fetchBookings());
@@ -69,14 +71,29 @@ export default function BookingsPage() {
     };
 
     const confirmDelete = async () => {
-        if (isBulkDeleting) {
-            const ids = Array.from(selectedKeys) as string[];
-            await dispatch(deleteBookings(ids)).unwrap();
-            setSelectedKeys(new Set([]));
-        } else if (deletingId) {
-            await dispatch(deleteBooking(deletingId)).unwrap();
+        setIsDeleting(true);
+        try {
+            if (isBulkDeleting) {
+                const ids = selectedKeys === "all"
+                    ? items.map(b => b.id)
+                    : Array.from(selectedKeys) as string[];
+
+                if (ids.length === 0) return;
+
+                await dispatch(deleteBookings(ids)).unwrap();
+                setSelectedKeys(new Set([]));
+                toast.success(`Successfully deleted ${ids.length} bookings`);
+            } else if (deletingId) {
+                await dispatch(deleteBooking(deletingId)).unwrap();
+                toast.success("Booking deleted successfully");
+            }
+            setIsDeleteModalOpen(false);
+        } catch (error: any) {
+            console.error("Delete error:", error);
+            toast.error(error || "Failed to delete booking(s)");
+        } finally {
+            setIsDeleting(false);
         }
-        setIsDeleteModalOpen(false);
     };
 
     const getStatusColor = (status: string): "default" | "primary" | "success" | "warning" | "danger" => {
@@ -106,11 +123,11 @@ export default function BookingsPage() {
                 </Button>
             </div>
 
-            {selectedKeys.size > 0 && (
+            {(selectedKeys === "all" || selectedKeys.size > 0) && (
                 <Card className="bg-primary-50 border-primary-200">
                     <CardBody className="py-2 px-4 flex flex-row items-center justify-between">
                         <p className="text-sm font-medium text-primary-700">
-                            {selectedKeys === "all" ? bookings.length : selectedKeys.size} bookings selected
+                            {selectedKeys === "all" ? items.length : selectedKeys.size} bookings selected
                         </p>
                         <Button
                             color="danger"
@@ -135,107 +152,160 @@ export default function BookingsPage() {
                     </div>
                 </CardHeader>
                 <CardBody>
-                    <Table
-                        aria-label="Bookings table"
-                        removeWrapper
-                        selectionMode="multiple"
-                        selectedKeys={selectedKeys}
-                        onSelectionChange={setSelectedKeys}
-                    >
-                        <TableHeader>
-                            <TableColumn>Status</TableColumn>
-                            <TableColumn>Customer</TableColumn>
-                            <TableColumn>Vehicle / Location</TableColumn>
-                            <TableColumn className="hidden sm:table-cell">Booking Dates</TableColumn>
-                            <TableColumn className="text-right hidden lg:table-cell">Revenue</TableColumn>
-                            <TableColumn className="text-right">Actions</TableColumn>
-                        </TableHeader>
-                        <TableBody
-                            loadingContent={<Skeleton className="w-full h-20" />}
-                            emptyContent={
-                                <div className="py-12 flex flex-col items-center justify-center gap-2 text-default-400">
-                                    <Calendar size={32} />
-                                    <span>No reservations found</span>
-                                </div>
-                            }
+                    {/* Desktop/Tablet Table */}
+                    <div className="hidden md:block">
+                        <Table
+                            aria-label="Bookings table"
+                            removeWrapper
+                            selectionMode="multiple"
+                            selectedKeys={selectedKeys}
+                            onSelectionChange={setSelectedKeys}
                         >
-                            {items.map((b) => (
-                                <TableRow key={b.id}>
-                                    <TableCell>
-                                        <Chip variant="flat" color={getStatusColor(b.status || "pending")} size="sm">
-                                            {b.status || "pending"}
-                                        </Chip>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Link href={`/dashboard/bookings/${b.id}`} className="group/customer">
+                            <TableHeader>
+                                <TableColumn>Status</TableColumn>
+                                <TableColumn>Customer</TableColumn>
+                                <TableColumn>Vehicle / Location</TableColumn>
+                                <TableColumn className="hidden lg:table-cell">Booking Dates</TableColumn>
+                                <TableColumn className="text-right hidden xl:table-cell">Revenue</TableColumn>
+                                <TableColumn className="text-right">Actions</TableColumn>
+                            </TableHeader>
+                            <TableBody
+                                loadingContent={<Skeleton className="w-full h-20" />}
+                                emptyContent={
+                                    <div className="py-12 flex flex-col items-center justify-center gap-2 text-default-400">
+                                        <Calendar size={32} />
+                                        <span>No reservations found</span>
+                                    </div>
+                                }
+                            >
+                                {items.map((b) => (
+                                    <TableRow key={b.id}>
+                                        <TableCell>
+                                            <Chip variant="flat" color={getStatusColor(b.status || "pending")} size="sm">
+                                                {b.status || "pending"}
+                                            </Chip>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Link href={`/dashboard/bookings/${b.id}`} className="group/customer">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar name={b.guest_name} size="sm" className="group-hover/customer:ring-2 group-hover/customer:ring-primary transition-all" />
+                                                    <div>
+                                                        <p className="text-sm font-semibold group-hover/customer:text-primary transition-colors">{b.guest_name}</p>
+                                                        <p className="text-tiny text-default-400 flex items-center gap-1">
+                                                            <Phone size={12} /> {b.guest_phone || "—"}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div>
+                                                <p className="text-sm font-semibold">{b.car_name}</p>
+                                                <p className="text-tiny text-default-400 flex items-center gap-1">
+                                                    <MapPin size={12} /> {b.pickup_location}
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="hidden lg:table-cell">
+                                            <div className="flex flex-col gap-1">
+                                                <p className="text-xs font-medium">{new Date(b.pickup_date).toLocaleDateString()}</p>
+                                                <p className="text-[10px] text-default-400">to {new Date(b.return_date).toLocaleDateString()}</p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right hidden xl:table-cell">
+                                            <span className="font-semibold">
+                                                ${Number(b.total_price || 0).toLocaleString()}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Dropdown placement="bottom-end">
+                                                <DropdownTrigger>
+                                                    <Button isIconOnly variant="light" size="sm">
+                                                        <MoreVertical size={18} />
+                                                    </Button>
+                                                </DropdownTrigger>
+                                                <DropdownMenu aria-label="Booking actions">
+                                                    <DropdownItem key="view" startContent={<Eye size={16} />} href={`/dashboard/bookings/${b.id}`} as={Link}>
+                                                        View Details
+                                                    </DropdownItem>
+                                                    {b.status === "pending" ? (
+                                                        <DropdownItem
+                                                            key="confirm"
+                                                            color="success"
+                                                            className="text-success"
+                                                            startContent={<Check size={16} />}
+                                                            onPress={() => handleStatusChange(b.id, "confirmed")}
+                                                        >
+                                                            Confirm Booking
+                                                        </DropdownItem>
+                                                    ) : null}
+                                                    <DropdownItem
+                                                        key="delete"
+                                                        color="danger"
+                                                        className="text-danger"
+                                                        startContent={<X size={16} />}
+                                                        onPress={() => handleDeleteBooking(b.id)}
+                                                    >
+                                                        {b.status === "pending" ? "Refuse Booking" : "Delete Record"}
+                                                    </DropdownItem>
+                                                </DropdownMenu>
+                                            </Dropdown>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    {/* Mobile Card List */}
+                    <div className="md:hidden space-y-4">
+                        {loading ? (
+                            Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)
+                        ) : items.length === 0 ? (
+                            <div className="py-12 flex flex-col items-center justify-center gap-2 text-default-400">
+                                <Calendar size={32} />
+                                <span>No reservations found</span>
+                            </div>
+                        ) : (
+                            items.map((b) => (
+                                <Card key={b.id} className="border-none bg-default-50 shadow-none">
+                                    <CardBody className="p-4">
+                                        <div className="flex justify-between items-start mb-3">
                                             <div className="flex items-center gap-3">
-                                                <Avatar name={b.guest_name} size="sm" className="group-hover/customer:ring-2 group-hover/customer:ring-primary transition-all" />
+                                                <Avatar name={b.guest_name} size="sm" />
                                                 <div>
-                                                    <p className="text-sm font-semibold group-hover/customer:text-primary transition-colors">{b.guest_name}</p>
-                                                    <p className="text-tiny text-default-400 flex items-center gap-1">
-                                                        <Phone size={12} /> {b.guest_phone || "—"}
-                                                    </p>
+                                                    <p className="text-sm font-bold">{b.guest_name}</p>
+                                                    <p className="text-tiny text-default-500">{new Date(b.pickup_date).toLocaleDateString()}</p>
                                                 </div>
                                             </div>
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div>
-                                            <p className="text-sm font-semibold">{b.car_name}</p>
-                                            <p className="text-tiny text-default-400 flex items-center gap-1">
-                                                <MapPin size={12} /> {b.pickup_location}
-                                            </p>
+                                            <Chip variant="flat" color={getStatusColor(b.status || "pending")} size="sm">
+                                                {b.status || "pending"}
+                                            </Chip>
                                         </div>
-                                    </TableCell>
-                                    <TableCell className="hidden sm:table-cell">
-                                        <div className="flex flex-col gap-1">
-                                            <p className="text-xs"><span className="text-default-400">From:</span> {new Date(b.pickup_date).toLocaleDateString()}</p>
-                                            <p className="text-xs"><span className="text-default-400">Until:</span> {new Date(b.return_date).toLocaleDateString()}</p>
+                                        <div className="space-y-2 mb-4">
+                                            <div className="flex items-center gap-2 text-small">
+                                                <Car className="size-4 text-primary" />
+                                                <span className="font-semibold">{b.car_name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-tiny text-default-500">
+                                                <MapPin className="size-3" />
+                                                <span>{b.pickup_location}</span>
+                                            </div>
                                         </div>
-                                    </TableCell>
-                                    <TableCell className="text-right hidden lg:table-cell">
-                                        <span className="font-semibold">
-                                            ${Number(b.total_price || 0).toLocaleString()}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <Dropdown placement="bottom-end">
-                                            <DropdownTrigger>
-                                                <Button isIconOnly variant="light" size="sm">
-                                                    <MoreVertical size={18} />
+                                        <div className="flex justify-between items-center pt-2 border-t border-default-100">
+                                            <span className="font-bold text-primary">${Number(b.total_price || 0).toLocaleString()}</span>
+                                            <div className="flex gap-2">
+                                                <Button size="sm" variant="flat" as={Link} href={`/dashboard/bookings/${b.id}`}>Details</Button>
+                                                <Button isIconOnly size="sm" variant="light" onPress={() => handleDeleteBooking(b.id)}>
+                                                    <X size={16} className="text-danger" />
                                                 </Button>
-                                            </DropdownTrigger>
-                                            <DropdownMenu aria-label="Booking actions">
-                                                <DropdownItem key="view" startContent={<Eye size={16} />} href={`/dashboard/bookings/${b.id}`} as={Link}>
-                                                    View Details
-                                                </DropdownItem>
-                                                {b.status === "pending" ? (
-                                                    <DropdownItem
-                                                        key="confirm"
-                                                        color="success"
-                                                        className="text-success"
-                                                        startContent={<Check size={16} />}
-                                                        onPress={() => handleStatusChange(b.id, "confirmed")}
-                                                    >
-                                                        Confirm Booking
-                                                    </DropdownItem>
-                                                ) : null}
-                                                <DropdownItem
-                                                    key="delete"
-                                                    color="danger"
-                                                    className="text-danger"
-                                                    startContent={<X size={16} />}
-                                                    onPress={() => handleDeleteBooking(b.id)}
-                                                >
-                                                    {b.status === "pending" ? "Refuse Booking" : "Delete Record"}
-                                                </DropdownItem>
-                                            </DropdownMenu>
-                                        </Dropdown>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                                            </div>
+                                        </div>
+                                    </CardBody>
+                                </Card>
+                            ))
+                        )}
+                    </div>
 
                     {!loading && bookings.length > 0 && (
                         <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4">
@@ -276,9 +346,10 @@ export default function BookingsPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmDelete}
+                isLoading={isDeleting}
                 title={isBulkDeleting ? "Delete Selected Bookings" : "Delete Booking"}
                 message={isBulkDeleting
-                    ? `Are you sure you want to permanently remove ${selectedKeys === 'all' ? bookings.length : selectedKeys.size} selected bookings?`
+                    ? `Are you sure you want to permanently remove ${selectedKeys === 'all' ? items.length : selectedKeys.size} selected bookings?`
                     : "Are you sure you want to permanently remove this booking record?"
                 }
             />

@@ -12,11 +12,11 @@ import {
     Link as LinkIcon,
     Settings,
     LogOut,
-    User,
     Leaf,
     MessageSquare,
     ChevronRight,
     DollarSign,
+    Bell,
 } from "lucide-react"
 import {
     Listbox,
@@ -138,6 +138,12 @@ export function AppSidebar({ isOpen = false, onClose }: AppSidebarProps) {
                     url: "/dashboard/messages",
                     icon: MessageSquare,
                     isActive: isActive("/dashboard/messages"),
+                },
+                {
+                    title: "Notifications",
+                    url: "/dashboard/notifications",
+                    icon: Bell,
+                    isActive: isActive("/dashboard/notifications"),
                 },
                 {
                     title: "Reports",

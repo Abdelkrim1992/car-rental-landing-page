@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchMessages, markMessageRead, deleteMessage, deleteMessages, replyToMessage, Message } from "@/store/slices/messagesSlice";
 import { ConfirmModal } from "@/components/dashboard/ConfirmModal";
@@ -27,6 +27,9 @@ import {
     ModalBody,
     ModalFooter,
     Textarea,
+    Pagination,
+    Select,
+    SelectItem,
     Skeleton,
     Divider
 } from "@heroui/react";
@@ -43,10 +46,22 @@ export default function MessagesPage() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [rowsPerPage, setRowsPerPage] = useState("10");
 
     useEffect(() => {
         dispatch(fetchMessages());
     }, [dispatch]);
+
+    const rows = parseInt(rowsPerPage);
+    const pages = Math.ceil(messages.length / rows);
+
+    const items = useMemo(() => {
+        const start = (currentPage - 1) * rows;
+        const end = start + rows;
+        return messages.slice(start, end);
+    }, [currentPage, messages, rows]);
 
     const handleMarkAsRead = (id: string, status: string) => {
         if (status === "unread") {
@@ -67,14 +82,29 @@ export default function MessagesPage() {
     };
 
     const confirmDelete = async () => {
-        if (isBulkDeleting) {
-            const ids = Array.from(selectedKeys) as string[];
-            await dispatch(deleteMessages(ids)).unwrap();
-            setSelectedKeys(new Set([]));
-        } else if (deletingId) {
-            await dispatch(deleteMessage(deletingId)).unwrap();
+        setIsDeleting(true);
+        try {
+            if (isBulkDeleting) {
+                const ids = selectedKeys === "all"
+                    ? items.map(m => m.id)
+                    : Array.from(selectedKeys) as string[];
+
+                if (ids.length === 0) return;
+
+                await dispatch(deleteMessages(ids)).unwrap();
+                setSelectedKeys(new Set([]));
+                toast.success(`Successfully deleted ${ids.length} messages`);
+            } else if (deletingId) {
+                await dispatch(deleteMessage(deletingId)).unwrap();
+                toast.success("Message deleted successfully");
+            }
+            setIsDeleteModalOpen(false);
+        } catch (error: any) {
+            console.error("Delete error:", error);
+            toast.error(error || "Failed to delete message(s)");
+        } finally {
+            setIsDeleting(false);
         }
-        setIsDeleteModalOpen(false);
     };
 
     const handleOpenMessage = (msg: Message) => {
@@ -106,11 +136,11 @@ export default function MessagesPage() {
                 </p>
             </div>
 
-            {selectedKeys.size > 0 && (
+            {(selectedKeys === "all" || selectedKeys.size > 0) && (
                 <Card className="bg-primary-50 border-primary-200">
                     <CardBody className="py-2 px-4 flex flex-row items-center justify-between">
                         <p className="text-sm font-medium text-primary-700">
-                            {selectedKeys === "all" ? messages.length : selectedKeys.size} messages selected
+                            {selectedKeys === "all" ? items.length : selectedKeys.size} messages selected
                         </p>
                         <Button
                             color="danger"
@@ -158,7 +188,7 @@ export default function MessagesPage() {
                                 </div>
                             }
                         >
-                            {messages.map((msg) => (
+                            {items.map((msg) => (
                                 <TableRow key={msg.id} className="cursor-pointer">
                                     <TableCell>
                                         <Chip
@@ -222,6 +252,38 @@ export default function MessagesPage() {
                             ))}
                         </TableBody>
                     </Table>
+                    {!loading && messages.length > 0 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-4">
+                            <div className="flex items-center gap-3">
+                                <span className="text-small text-default-500">Rows per page</span>
+                                <Select
+                                    size="sm"
+                                    className="w-20"
+                                    variant="flat"
+                                    disallowEmptySelection
+                                    selectedKeys={[rowsPerPage]}
+                                    onSelectionChange={(keys) => {
+                                        setRowsPerPage(Array.from(keys)[0] as string);
+                                        setCurrentPage(1);
+                                    }}
+                                >
+                                    <SelectItem key="5">5</SelectItem>
+                                    <SelectItem key="10">10</SelectItem>
+                                    <SelectItem key="20">20</SelectItem>
+                                    <SelectItem key="50">50</SelectItem>
+                                </Select>
+                            </div>
+                            <Pagination
+                                isCompact
+                                showControls
+                                showShadow
+                                color="primary"
+                                page={currentPage}
+                                total={pages}
+                                onChange={setCurrentPage}
+                            />
+                        </div>
+                    )}
                 </CardBody>
             </Card>
 
@@ -303,9 +365,10 @@ export default function MessagesPage() {
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}
                 onConfirm={confirmDelete}
+                isLoading={isDeleting}
                 title={isBulkDeleting ? "Delete Selected Messages" : "Delete Message"}
                 message={isBulkDeleting
-                    ? `Are you sure you want to permanently remove ${selectedKeys === 'all' ? messages.length : selectedKeys.size} selected messages?`
+                    ? `Are you sure you want to permanently remove ${selectedKeys === 'all' ? items.length : selectedKeys.size} selected messages?`
                     : "Are you sure you want to permanently remove this message?"
                 }
             />

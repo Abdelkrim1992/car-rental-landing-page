@@ -165,6 +165,18 @@ export const deleteCar = createAsyncThunk("cars/deleteCar", async (id: string, {
     }
 });
 
+// Admin: Delete Multiple Cars
+export const deleteCars = createAsyncThunk("cars/deleteCars", async (ids: string[], { rejectWithValue }) => {
+    try {
+        const supabase = createClient();
+        const { error } = await supabase.from("cars").delete().in("id", ids);
+        if (error) throw new Error(error.message);
+        return ids;
+    } catch (err) {
+        return rejectWithValue(err instanceof Error ? err.message : "Failed to delete cars");
+    }
+});
+
 const carsSlice = createSlice({
     name: "cars",
     initialState,
@@ -198,6 +210,10 @@ const carsSlice = createSlice({
             })
             .addCase(deleteCar.fulfilled, (state, action) => {
                 state.cars = state.cars.filter(c => c.id !== action.payload);
+            })
+            .addCase(deleteCars.fulfilled, (state, action) => {
+                const deletedIds = action.payload;
+                state.cars = state.cars.filter(c => !deletedIds.includes(c.id));
             });
     },
 });
