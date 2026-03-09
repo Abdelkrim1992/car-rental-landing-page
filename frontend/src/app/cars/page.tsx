@@ -86,7 +86,7 @@ export default function CarsPage() {
                         {filteredCars.map((car, i) => (
                             <motion.div key={car.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3, delay: i * 0.05 }}>
                                 <Link href={`/cars/${car.id}`}>
-                                    <motion.div whileHover={{ y: -4 }} className="group cursor-pointer">
+                                    <motion.div whileHover={{ y: 0 }} className="group cursor-pointer">
                                         <div className="bg-gray-100 rounded-2xl overflow-hidden mb-4 relative">
                                             <img loading="lazy" decoding="async" src={car.img} alt={car.name} className="w-full h-[280px] object-cover transition-transform duration-500 group-hover:scale-105" />
                                             <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-sm rounded-full px-3 py-1">

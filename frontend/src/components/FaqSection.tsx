@@ -75,14 +75,14 @@ export function FaqSection() {
                             </p>
                         </motion.div>
                     </AnimatePresence>
-                    <motion.div
+                    {/* <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={isInView ? { opacity: 1, y: 0 } : {}}
                         transition={{ duration: 0.7, delay: 0.3 }}
                         className="rounded-xl overflow-hidden h-[150px]"
                     >
                         <img loading="lazy" decoding="async" src={imgFaqImage} alt="FAQ illustration" className="w-full h-full object-cover" />
-                    </motion.div>
+                    </motion.div> */}
                 </div>
             </div>
         </section>

@@ -6,8 +6,7 @@ import { motion, useInView, AnimatePresence } from "motion/react";
 export function RentalStepsSection() {
     const sectionRef = useRef<HTMLElement>(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
-    const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-    const activeIndex = hoveredIndex !== null ? hoveredIndex : 0;
+    const [activeIndex, setActiveIndex] = useState(0);
 
     return (
         <section id="steps" ref={sectionRef} className="w-full max-w-[1280px] mx-auto px-6 md:px-12 lg:px-0 py-12 md:py-16">
@@ -37,10 +36,11 @@ export function RentalStepsSection() {
                         animate={isInView ? { opacity: 1, y: 0 } : {}}
                     >
                         <motion.div
-                            whileHover={{ y: -3, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
+                            whileHover={{ y: 0, boxShadow: "0 20px 40px rgba(0,0,0,0.1)" }}
                             transition={{ type: "spring", stiffness: 300 }}
-                            onHoverStart={() => setHoveredIndex(i)}
-                            onHoverEnd={() => setHoveredIndex(null)}
+                            onHoverStart={() => setActiveIndex(i)}
+                            onHoverEnd={() => setActiveIndex(0)}
+                            onClick={() => setActiveIndex(i)}
                             className={`relative rounded-2xl min-h-[320px] md:min-h-[360px] overflow-hidden cursor-pointer ${activeIndex === i ? "bg-[#18181b]" : "bg-[#f9fafb]"
                                 }`}
                             style={{ transition: "background-color 0.4s ease" }}
@@ -78,8 +78,8 @@ export function RentalStepsSection() {
                                     </motion.span>
                                     <div
                                         className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] transition-colors duration-300 ${activeIndex === i
-                                                ? "bg-white text-black"
-                                                : "bg-black text-white"
+                                            ? "bg-white text-black"
+                                            : "bg-black text-white"
                                             }`}
                                     >
                                         {step.num}

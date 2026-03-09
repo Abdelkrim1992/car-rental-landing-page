@@ -14,7 +14,7 @@ function ArrowIcon({ active }: { active: boolean }) {
 }
 
 export function WhyUsSection() {
-    const [activeIndex, setActiveIndex] = useState(1);
+    const [activeIndex, setActiveIndex] = useState(0);
     const sectionRef = useRef<HTMLElement>(null);
     const isInView = useInView(sectionRef, { once: true, margin: "-100px" });
 

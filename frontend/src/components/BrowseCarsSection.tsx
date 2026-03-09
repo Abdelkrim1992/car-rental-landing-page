@@ -94,7 +94,7 @@ export function BrowseCarsSection() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={isInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.7, delay: 0.1 }}
-                className="flex flex-col sm:flex-row items-stretch sm:items-center sm:gap-0 border-b border-gray-100 pb-4 mb-8 md:mb-10"
+                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 border-b border-gray-100 pb-4 mb-8 md:mb-10"
             >
                 {/* Car Type Dropdown */}
                 <div className="flex-1 relative">
@@ -126,7 +126,7 @@ export function BrowseCarsSection() {
                 </div>
 
                 {/* Brand Dropdown */}
-                <div className="flex-1 relative px-3">
+                <div className="flex-1 relative sm:px-3">
                     <button
                         onClick={() => setOpenDropdown(openDropdown === "brand" ? null : "brand")}
                         className="w-full flex items-center justify-between sm:px-4 sm:border-r sm:border-gray-100 h-10 bg-gray-100 transition-colors px-2 rounded"
