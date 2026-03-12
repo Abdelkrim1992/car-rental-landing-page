@@ -62,7 +62,7 @@ export function HeroSection() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-                            className="text-gray-200 text-[14px] md:text-[18px] md:pb-5 max-w-[512px] mb-6 whitespace-pre-line"
+                            className="text-gray-200 text-[14px] md:text-[18px] max-w-[512px] mb-3 whitespace-pre-line"
                         >
                             {settings?.hero_subtitle || "Discover The Thrill Of Driving Luxury With Our Exclusive Collection Of Well-Maintained Hypercars And Sports Cars Available For Rent."}
                         </motion.p>
@@ -70,10 +70,11 @@ export function HeroSection() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
+                            className="pt-10"
                         >
                             <Link
                                 href="#browse"
-                                className="bg-white cursor-pointer text-black rounded-full px-10 py-3.5 text-[13px] font-medium tracking-wide transition-all duration-200 shadow-md hover:shadow-lg w-full sm:w-auto"
+                                className="bg-white cursor-pointer text-black rounded-full px-10 py-3 text-[13px] font-medium tracking-wide transition-all duration-200 shadow-md hover:shadow-lg w-full sm:w-auto"
                             >
                                 Explore Fleet
                             </Link>

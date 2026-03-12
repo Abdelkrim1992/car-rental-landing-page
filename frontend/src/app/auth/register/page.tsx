@@ -13,6 +13,7 @@ export default function RegisterPage() {
     const [full_name, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [showPassword, setShowPassword] = useState(false);
     const [blocked, setBlocked] = useState(false);
     const [checking, setChecking] = useState(true);
@@ -39,6 +40,20 @@ export default function RegisterPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (blocked) return;
+
+        const newErrors: Record<string, string> = {};
+        if (!full_name) newErrors.full_name = "Full name is required";
+        if (!email) newErrors.email = "Email is required";
+        else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = "Invalid email format";
+        if (!password) newErrors.password = "Password is required";
+        else if (password.length < 6) newErrors.password = "Password must be at least 6 characters";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
+        setErrors({});
         dispatch(registerUser({ email, password, full_name }));
     };
 
@@ -83,23 +98,50 @@ export default function RegisterPage() {
                             <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
                                 <div className="mb-5">
                                     <label className="text-gray-500 text-[10px] tracking-[1px] uppercase block mb-2">Full Name</label>
-                                    <input type="text" value={full_name} onChange={(e) => setFullName(e.target.value)} required
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-black/30 transition-colors" placeholder="Admin Name" />
+                                    <input 
+                                        type="text" 
+                                        value={full_name} 
+                                        onChange={(e) => {
+                                            setFullName(e.target.value);
+                                            if (errors.full_name) setErrors(prev => ({ ...prev, full_name: "" }));
+                                        }} 
+                                        className={`w-full bg-gray-50 border ${errors.full_name ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 text-[14px] outline-none focus:border-black/30 transition-colors`} 
+                                        placeholder="Admin Name" 
+                                    />
+                                    {errors.full_name && <p className="text-red-500 text-[11px] mt-1 ml-1">{errors.full_name}</p>}
                                 </div>
                                 <div className="mb-5">
                                     <label className="text-gray-500 text-[10px] tracking-[1px] uppercase block mb-2">Email</label>
-                                    <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-black/30 transition-colors" placeholder="admin@renture.com" />
+                                    <input 
+                                        type="email" 
+                                        value={email} 
+                                        onChange={(e) => {
+                                            setEmail(e.target.value);
+                                            if (errors.email) setErrors(prev => ({ ...prev, email: "" }));
+                                        }} 
+                                        className={`w-full bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 text-[14px] outline-none focus:border-black/30 transition-colors`} 
+                                        placeholder="admin@renture.com" 
+                                    />
+                                    {errors.email && <p className="text-red-500 text-[11px] mt-1 ml-1">{errors.email}</p>}
                                 </div>
                                 <div className="mb-6">
                                     <label className="text-gray-500 text-[10px] tracking-[1px] uppercase block mb-2">Password</label>
                                     <div className="relative">
-                                        <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-                                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[14px] outline-none focus:border-black/30 transition-colors pr-10" placeholder="Min. 6 characters" />
+                                        <input 
+                                            type={showPassword ? "text" : "password"} 
+                                            value={password} 
+                                            onChange={(e) => {
+                                                setPassword(e.target.value);
+                                                if (errors.password) setErrors(prev => ({ ...prev, password: "" }));
+                                            }} 
+                                            className={`w-full bg-gray-50 border ${errors.password ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 text-[14px] outline-none focus:border-black/30 transition-colors pr-10`} 
+                                            placeholder="Min. 6 characters" 
+                                        />
                                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                                             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                         </button>
                                     </div>
+                                    {errors.password && <p className="text-red-500 text-[11px] mt-1 ml-1">{errors.password}</p>}
                                 </div>
                                 <button 
                                     type="submit" 

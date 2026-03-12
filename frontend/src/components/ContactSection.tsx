@@ -14,9 +14,26 @@ export function ContactSection() {
 
     const dispatch = useAppDispatch();
     const [formError, setFormError] = useState<string | null>(null);
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError(null);
+        
+        const newErrors: Record<string, string> = {};
+        if (!form.name) newErrors.name = "Name is required";
+        if (!form.email) {
+            newErrors.email = "Email is required";
+        } else if (!/\S+@\S+\.\S+/.test(form.email)) {
+            newErrors.email = "Email is invalid";
+        }
+        if (!form.message) newErrors.message = "Message is required";
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
+            return;
+        }
+
+        setErrors({});
         try {
             await dispatch(sendMessage(form)).unwrap();
             setSubmitted(true);
@@ -105,27 +122,33 @@ export function ContactSection() {
                                     </div>
                                 )}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                                    <div>
+                                    <div className="relative">
                                         <label className="text-gray-500 text-[10px] tracking-[1px] uppercase block mb-2">Name</label>
                                         <input
                                             type="text"
                                             value={form.name}
-                                            onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                            onChange={(e) => {
+                                                setForm({ ...form, name: e.target.value });
+                                                if (errors.name) setErrors(prev => ({ ...prev, name: "" }));
+                                            }}
                                             placeholder="John Doe"
-                                            required
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-[13px] placeholder-gray-600 outline-none focus:border-white/30 transition-colors"
+                                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white text-[13px] placeholder-gray-600 outline-none transition-colors ${errors.name ? "border-red-500/50" : "border-white/10 focus:border-white/30"}`}
                                         />
+                                        {errors.name && <p className="text-red-500 text-[10px] absolute -bottom-4 left-1">{errors.name}</p>}
                                     </div>
-                                    <div>
+                                    <div className="relative">
                                         <label className="text-gray-500 text-[10px] tracking-[1px] uppercase block mb-2">Email</label>
                                         <input
                                             type="email"
                                             value={form.email}
-                                            onChange={(e) => setForm({ ...form, email: e.target.value })}
+                                            onChange={(e) => {
+                                                setForm({ ...form, email: e.target.value });
+                                                if (errors.email) setErrors(prev => ({ ...prev, email: "" }));
+                                            }}
                                             placeholder="you@example.com"
-                                            required
-                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-[13px] placeholder-gray-600 outline-none focus:border-white/30 transition-colors"
+                                            className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white text-[13px] placeholder-gray-600 outline-none transition-colors ${errors.email ? "border-red-500/50" : "border-white/10 focus:border-white/30"}`}
                                         />
+                                        {errors.email && <p className="text-red-500 text-[10px] absolute -bottom-4 left-1">{errors.email}</p>}
                                     </div>
                                 </div>
                                 <div>
@@ -138,16 +161,19 @@ export function ContactSection() {
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-[13px] placeholder-gray-600 outline-none focus:border-white/30 transition-colors"
                                     />
                                 </div>
-                                <div>
+                                <div className="relative">
                                     <label className="text-gray-500 text-[10px] tracking-[1px] uppercase block mb-2">Message</label>
                                     <textarea
                                         value={form.message}
-                                        onChange={(e) => setForm({ ...form, message: e.target.value })}
+                                        onChange={(e) => {
+                                            setForm({ ...form, message: e.target.value });
+                                            if (errors.message) setErrors(prev => ({ ...prev, message: "" }));
+                                        }}
                                         placeholder="Tell us about your rental needs..."
-                                        required
                                         rows={4}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-[13px] placeholder-gray-600 outline-none focus:border-white/30 transition-colors resize-none"
+                                        className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white text-[13px] placeholder-gray-600 outline-none transition-colors resize-none ${errors.message ? "border-red-500/50" : "border-white/10 focus:border-white/30"}`}
                                     />
+                                    {errors.message && <p className="text-red-500 text-[10px] absolute -bottom-4 left-1">{errors.message}</p>}
                                 </div>
                                 <motion.button
                                     whileHover={{ scale: 1.00 }}

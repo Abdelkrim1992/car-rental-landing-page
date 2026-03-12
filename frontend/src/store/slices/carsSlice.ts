@@ -34,10 +34,10 @@ export const fetchCars = createAsyncThunk("cars/fetchCars", async (_, { rejectWi
         if (error) throw new Error(error.message);
 
         // Supabase schema maps image_url -> img, type_name -> type, etc. based on previous DB usage
-        const mappedCars = data.map((c: Record<string, unknown>) => ({
+        const mappedCars = data.map((c: Record<string, any>) => ({
             id: c.id,
             name: c.name,
-            price: `$${c.price_per_day}/Day`,
+            price: `$${c.price_per_day}`,
             fuel: c.fuel || "Petrol",
             mileage: c.mileage || "0",
             img: c.image_url || "/images/dashboard/placeholder.png",
@@ -46,6 +46,19 @@ export const fetchCars = createAsyncThunk("cars/fetchCars", async (_, { rejectWi
             location: c.location || "Location",
             description: c.description || "",
             status: c.status || "Available",
+            year: c.year,
+            transmission: c.transmission,
+            seats: c.seats,
+            acceleration: c.acceleration,
+            top_speed: c.top_speed,
+            engine: c.engine,
+            features: c.features || [],
+            specifications: c.specifications || {},
+            images: c.images || [],
+            host_name: c.host_name,
+            host_avatar: c.host_avatar,
+            host_location: c.host_location,
+            policy: c.policy,
             availability_days: (c.availability_days as string[]) || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         }));
 
@@ -64,7 +77,7 @@ export const fetchCarById = createAsyncThunk("cars/fetchCarById", async (id: str
         return {
             id: data.id,
             name: data.name,
-            price: `$${data.price_per_day}/Day`,
+            price: `$${data.price_per_day}`,
             fuel: data.fuel || "Petrol",
             mileage: data.mileage || "0",
             img: data.image_url || "",
@@ -73,6 +86,19 @@ export const fetchCarById = createAsyncThunk("cars/fetchCarById", async (id: str
             location: data.location || "",
             description: data.description || "",
             status: data.status || "Available",
+            year: data.year,
+            transmission: data.transmission,
+            seats: data.seats,
+            acceleration: data.acceleration,
+            top_speed: data.top_speed,
+            engine: data.engine,
+            features: data.features || [],
+            specifications: data.specifications || {},
+            images: data.images || [],
+            host_name: data.host_name,
+            host_avatar: data.host_avatar,
+            host_location: data.host_location,
+            policy: data.policy,
             availability_days: data.availability_days || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         } as BrowseCar;
     } catch (err) {
@@ -86,7 +112,7 @@ export const createCar = createAsyncThunk("cars/createCar", async (carData: Part
         const supabase = createClient();
         const { data, error } = await supabase.from("cars").insert({
             name: carData.name,
-            price_per_day: parseInt(carData.price?.replace(/[^0-9]/g, '') || "0"),
+            price_per_day: typeof carData.price === 'string' ? parseFloat(carData.price.replace(/[^0-9.]/g, '') || "0") : carData.price,
             fuel: carData.fuel,
             image_url: carData.img,
             type: carData.type,
@@ -94,6 +120,19 @@ export const createCar = createAsyncThunk("cars/createCar", async (carData: Part
             location: carData.location,
             description: carData.description,
             status: carData.status || "Available",
+            year: carData.year,
+            transmission: carData.transmission,
+            seats: carData.seats,
+            acceleration: carData.acceleration,
+            top_speed: carData.top_speed,
+            engine: carData.engine,
+            features: carData.features || [],
+            specifications: carData.specifications || {},
+            images: carData.images || [],
+            host_name: carData.host_name,
+            host_avatar: carData.host_avatar,
+            host_location: carData.host_location,
+            policy: carData.policy,
             availability_days: carData.availability_days || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         }).select().single();
 
@@ -101,7 +140,7 @@ export const createCar = createAsyncThunk("cars/createCar", async (carData: Part
         return {
             id: data.id,
             name: data.name,
-            price: `$${data.price_per_day}/Day`,
+            price: `$${data.price_per_day}`,
             fuel: data.fuel,
             mileage: data.mileage || "0",
             img: data.image_url,
@@ -110,6 +149,19 @@ export const createCar = createAsyncThunk("cars/createCar", async (carData: Part
             location: data.location,
             description: data.description,
             status: data.status,
+            year: data.year,
+            transmission: data.transmission,
+            seats: data.seats,
+            acceleration: data.acceleration,
+            top_speed: data.top_speed,
+            engine: data.engine,
+            features: data.features || [],
+            specifications: data.specifications || {},
+            images: data.images || [],
+            host_name: data.host_name,
+            host_avatar: data.host_avatar,
+            host_location: data.host_location,
+            policy: data.policy,
             availability_days: data.availability_days || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         } as BrowseCar;
     } catch (err) {
@@ -123,7 +175,7 @@ export const updateCar = createAsyncThunk("cars/updateCar", async ({ id, updates
         const supabase = createClient();
         const dbUpdates: Record<string, unknown> = {};
         if (updates.name) dbUpdates.name = updates.name;
-        if (updates.price) dbUpdates.price_per_day = parseInt(updates.price.replace(/[^0-9]/g, '') || "0");
+        if (updates.price !== undefined) dbUpdates.price_per_day = typeof updates.price === 'string' ? parseFloat(updates.price.replace(/[^0-9.]/g, '') || "0") : updates.price;
         if (updates.fuel) dbUpdates.fuel = updates.fuel;
         if (updates.img) dbUpdates.image_url = updates.img;
         if (updates.type) dbUpdates.type = updates.type;
@@ -131,6 +183,19 @@ export const updateCar = createAsyncThunk("cars/updateCar", async ({ id, updates
         if (updates.location) dbUpdates.location = updates.location;
         if (updates.description) dbUpdates.description = updates.description;
         if (updates.status) dbUpdates.status = updates.status;
+        if (updates.year) dbUpdates.year = updates.year;
+        if (updates.transmission) dbUpdates.transmission = updates.transmission;
+        if (updates.seats) dbUpdates.seats = updates.seats;
+        if (updates.acceleration) dbUpdates.acceleration = updates.acceleration;
+        if (updates.top_speed) dbUpdates.top_speed = updates.top_speed;
+        if (updates.engine) dbUpdates.engine = updates.engine;
+        if (updates.features) dbUpdates.features = updates.features;
+        if (updates.specifications) dbUpdates.specifications = updates.specifications;
+        if (updates.images) dbUpdates.images = updates.images;
+        if (updates.host_name) dbUpdates.host_name = updates.host_name;
+        if (updates.host_avatar) dbUpdates.host_avatar = updates.host_avatar;
+        if (updates.host_location) dbUpdates.host_location = updates.host_location;
+        if (updates.policy) dbUpdates.policy = updates.policy;
         if (updates.availability_days) dbUpdates.availability_days = updates.availability_days;
 
         const { data, error } = await supabase.from("cars").update(dbUpdates).eq("id", id).select();
@@ -143,7 +208,7 @@ export const updateCar = createAsyncThunk("cars/updateCar", async ({ id, updates
         return {
             id: carData.id,
             name: carData.name,
-            price: `$${carData.price_per_day}/Day`,
+            price: `$${carData.price_per_day}`,
             fuel: carData.fuel,
             mileage: carData.mileage || "0",
             img: carData.image_url,
@@ -152,6 +217,19 @@ export const updateCar = createAsyncThunk("cars/updateCar", async ({ id, updates
             location: carData.location,
             description: carData.description,
             status: carData.status,
+            year: carData.year,
+            transmission: carData.transmission,
+            seats: carData.seats,
+            acceleration: carData.acceleration,
+            top_speed: carData.top_speed,
+            engine: carData.engine,
+            features: carData.features || [],
+            specifications: carData.specifications || {},
+            images: carData.images || [],
+            host_name: carData.host_name,
+            host_avatar: carData.host_avatar,
+            host_location: carData.host_location,
+            policy: carData.policy,
             availability_days: carData.availability_days || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
         } as BrowseCar;
     } catch (err) {

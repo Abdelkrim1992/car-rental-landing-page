@@ -84,7 +84,7 @@ export function Navbar({ variant = "solid" }: NavbarProps) {
                 <div className="flex items-center gap-3">
                     <Link
                         href="/#contact"
-                        className="hidden md:inline-flex items-center bg-[#111827] text-white rounded-full px-5 py-2 text-[12px] font-medium tracking-wide hover:bg-[#1f2937] active:scale-[0.97] transition-all duration-200 shadow-sm hover:shadow-md"
+                        className="hidden md:inline-flex items-center bg-[#111827] text-white rounded-full px-5 py-3 text-[12px] font-medium tracking-wide hover:bg-[#1f2937] active:scale-[0.97] transition-all duration-200 shadow-sm hover:shadow-md"
                     >
                         Contact Us
                     </Link>

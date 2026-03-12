@@ -34,7 +34,7 @@ export default function Home() {
       <WhyUsSection />
       <RentalStepsSection />
       <FeaturedRideSection />
-      <ReviewsSection />
+      {/* <ReviewsSection /> */}
       <FaqSection />
       <ContactSection />
       <FooterSection />

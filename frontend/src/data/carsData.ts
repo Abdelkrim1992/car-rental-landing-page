@@ -57,6 +57,19 @@ export interface BrowseCar {
     location: string;
     description?: string;
     status?: string;
+    year?: number;
+    transmission?: string;
+    seats?: number;
+    acceleration?: string;
+    top_speed?: string;
+    engine?: string;
+    features?: string[];
+    specifications?: Record<string, any>;
+    images?: string[];
+    host_name?: string;
+    host_avatar?: string;
+    host_location?: string;
+    policy?: string;
     availability_days?: string[];
 }
 

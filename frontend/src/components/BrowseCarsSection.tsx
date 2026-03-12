@@ -197,7 +197,7 @@ export function BrowseCarsSection() {
                         whileHover={{ scale: 1 }}
                         whileTap={{ scale: 1}}
                         onClick={() => { setCurrentPage(0); setOpenDropdown(null); }}
-                        className="bg-[#111827] cursor-pointer text-white rounded-full px-10 py-3.5 text-[13px] font-medium tracking-wide hover:bg-[#1f2937] transition-all duration-200 shadow-md hover:shadow-lg w-full sm:w-auto"
+                        className="bg-[#111827] cursor-pointer text-white rounded-full px-10 py-3 text-[13px] font-medium tracking-wide hover:bg-[#1f2937] transition-all duration-200 shadow-md hover:shadow-lg w-full sm:w-auto"
                     >
                         Search Car
                     </motion.button>

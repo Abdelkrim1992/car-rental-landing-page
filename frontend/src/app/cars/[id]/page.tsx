@@ -1,24 +1,19 @@
 "use client";
 import { useParams } from "next/navigation";
 import { browseCars } from "@/data/carsData";
-import { motion } from "motion/react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Fuel, MapPin, Gauge, CalendarDays } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { FooterSection } from "@/components/FooterSection";
 import { CarDetailsSection } from "@/components/CarDetailsSection";
 import { ReviewsSection } from "@/components/ReviewsSection";
 import { FeaturedCarsSection } from "@/components/FeaturedCarsSection";
 import { useAppDispatch } from "@/store/hooks";
-import { setBookingForm } from "@/store/slices/bookingSlice";
 import { useEffect, useState } from "react";
 import { initAuth } from "@/store/slices/authSlice";
+import Link from "next/link";
 
 export default function CarDetailPage() {
     const params = useParams();
     const dispatch = useAppDispatch();
-    const router = useRouter();
     const [car, setCar] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -48,13 +43,6 @@ export default function CarDetailPage() {
 
         fetchCar();
     }, [params.id]);
-
-    const handleBookNow = () => {
-        if (car) {
-            dispatch(setBookingForm({ carId: car.id, pickupLocation: car.location }));
-            router.push(`/booking?carId=${car.id}`);
-        }
-    };
 
     if (loading) {
         return (
@@ -88,7 +76,7 @@ export default function CarDetailPage() {
             
             <CarDetailsSection car={car} />
             <ReviewsSection />
-            <FeaturedCarsSection />
+            <FeaturedCarsSection currentCar={car} />
 
             <FooterSection />
         </div>
