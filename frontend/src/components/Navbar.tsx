@@ -41,8 +41,8 @@ export function Navbar({ variant = "solid" }: NavbarProps) {
         <nav
             className={`fixed top-4 md:top-6 left-1/2 -translate-x-1/2 w-[94%] max-w-5xl z-50 rounded-full px-4 md:px-6 py-3 transition-all duration-500 ${
                 scrolled
-                    ? "bg-white/70 backdrop-blur-xl border border-gray-60 shadow-lg shadow-black/[0.04]"
-                    : "bg-white/70 backdrop-blur-md border border-white/50 shadow-sm"
+                    ? "bg-white/100 backdrop-blur-xl border border-gray-60 shadow-lg shadow-black/[0.04]"
+                    : "bg-white/100 backdrop-blur-md border border-gray-50 shadow-sm"
             }`}
         >
             <div className="flex items-center justify-between">
@@ -64,7 +64,7 @@ export function Navbar({ variant = "solid" }: NavbarProps) {
                             href={link.href}
                             className={`relative text-[13px] font-medium px-4 py-2 rounded-full transition-all duration-200 ${
                                 isActive(link.href)
-                                    ? "text-[#111827] bg-gray-100/80"
+                                    ? "text-[#111827] bg-gray-200"
                                     : "text-black hover:text-[#111827]"
                             }`}
                         >

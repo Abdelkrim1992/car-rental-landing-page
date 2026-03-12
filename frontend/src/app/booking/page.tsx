@@ -112,7 +112,7 @@ function BookingContent() {
     }
 
     return (
-        <div className="px-6 md:px-12 lg:px-24 pt-24 md:pt-28 pb-10">
+        <div className="px-6 md:px-12 lg:px-24 pt-24 md:pt-35 pb-10">
             <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-[28px] md:text-[36px] font-bold text-[#111827] mb-2">
                 Book Your Ride
             </motion.h1>
@@ -232,8 +232,8 @@ function BookingContent() {
 
 export default function BookingPage() {
     return (
-        <div className="min-h-screen bg-[#fafafa] font-['Inter',sans-serif]">
-            <Navbar variant="transparent" />
+        <div className="min-h-screen bg-white font-['Inter',sans-serif]">
+            <Navbar />
             <Suspense fallback={<div className="flex items-center justify-center py-24"><p className="text-gray-400">Loading...</p></div>}>
                 <BookingContent />
             </Suspense>
